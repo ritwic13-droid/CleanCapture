@@ -29,7 +29,7 @@ const TITLES = { select: 'Select / move (Delete removes)', crop: 'Crop', arrow: 
 for (const k of Object.keys(ICONS)) {
   const b = document.createElement('button');
   b.dataset.tool = k; b.title = TITLES[k]; b.setAttribute('aria-label', TITLES[k]);
-  b.innerHTML = `<svg viewBox="0 0 24 24">${ICONS[k]}</svg>`;
+  b.appendChild(new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${ICONS[k]}</svg>`, 'image/svg+xml').documentElement);
   b.addEventListener('click', () => setTool(k));
   $('#tools').appendChild(b);
 }
@@ -305,7 +305,8 @@ const canvasBlob = (cv, type, q) => new Promise(r => cv.toBlob(r, type, q));
 async function output(type, q) { render(true); const b = canvasBlob(view, type, q); render(); return b; }
 function download(blob, name) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();   // Firefox needs the link in the document
   setTimeout(() => URL.revokeObjectURL(a.href), 30000);
 }
 
