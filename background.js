@@ -71,7 +71,34 @@ async function runFull(tab) {
   }
 }
 
+// A picked element that does not scroll itself: scroll the page past it and stitch the slices.
+async function runBox(tab) {
+  try {
+    let e = await send(tab.id, { t: 'boxPrepare' });
+    const frames = [];
+    let right = 0, bottom = 0;
+    const add = async e => {
+      frames.push({ blob: await shot(tab), vw: e.vw, sx: e.sx, sy: e.sy, sw: e.sw, sh: e.sh, dx: e.offX, dy: e.offY });
+      right = Math.max(right, e.offX + e.sw); bottom = Math.max(bottom, e.offY + e.sh);
+    };
+    await add(e);
+    while (!e.fixed && e.offY + e.sh < e.totalH - 1 && frames.length < MAX_FRAMES) {
+      const prev = e.offY;
+      e = await send(tab.id, { t: 'boxScroll', dy: e.sh });
+      if (e.offY <= prev + 0.5) break;                 // page cannot scroll any further
+      badge(tab.id, Math.min(99, Math.round(((e.offY + e.sh) / e.totalH) * 100)) + '%');
+      await add(e);
+    }
+    await send(tab.id, { t: 'restore' });
+    await finish(tab, frames, Math.min(e.totalW, right), Math.min(e.totalH, bottom));
+  } catch (err) {
+    await send(tab.id, { t: 'restore' }).catch(() => {});
+    throw err;
+  }
+}
+
 async function runElement(tab, prepared = false) {
+  if (!prepared && await send(tab.id, { t: 'elKind' }) === 'box') return runBox(tab);
   try {
     let e = await send(tab.id, { t: 'elPrepare', prepared });
     const frames = [];

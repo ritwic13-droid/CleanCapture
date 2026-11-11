@@ -17,7 +17,7 @@ Clean Capture takes screenshots and nothing else.
 <b>Four ways to capture</b>
 <ul>
 <li>Full page — scrolls and stitches the whole page</li>
-<li>Scrollable area — click a chat, table or panel that scrolls on its own</li>
+<li>Pick element — hover to highlight any part of the page (a card, table, chat or scrolling panel) and click to capture all of it</li>
 <li>Selected area — drag a rectangle</li>
 <li>Visible area — what you see right now</li>
 </ul>
@@ -29,7 +29,7 @@ Crop with drag handles, shapes (rectangle, ellipse, line, arrow), pen, highlight
 PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 
 <b>Shortcuts</b>
-Alt+Shift+F (full page), E (scrollable area), A (selected area), V (visible area).
+Alt+Shift+F (full page), E (pick element), A (selected area), V (visible area).
 
 <b>Screen recording</b>
 Record a tab, a window or the whole screen as WebM or MP4, with optional audio and microphone, pause and resume.

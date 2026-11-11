@@ -19,7 +19,7 @@ Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen)
 `xcrun safari-web-extension-converter dist/chrome --app-name "Clean Capture"`
 
 ## Use
-Click the toolbar icon and pick a mode, or use Alt+Shift+F (full page), E (scrollable area), A (selected area), V (visible area).
+Click the toolbar icon and pick a mode, or use Alt+Shift+F (full page), E (pick element), A (selected area), V (visible area).
 
 ## Build store packages
 `./build.sh` writes `dist/clean-capture-chrome.zip` and `dist/clean-capture-firefox.zip`. Listing text is in [STORE_LISTING.md](STORE_LISTING.md) (Chrome) and [FIREFOX_LISTING.md](FIREFOX_LISTING.md) (Firefox).

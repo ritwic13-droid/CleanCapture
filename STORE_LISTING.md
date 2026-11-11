@@ -9,7 +9,7 @@ Full-page and scrollable-area screenshots with an editor, plus screen recording.
 Clean Capture takes screenshots and nothing else.
 
 • Full page — scrolls and stitches the whole page
-• Scrollable area — click a chat, table or panel that scrolls on its own
+• Pick element — hover to highlight any part of the page (a card, table, chat or scrolling panel) and click to capture all of it
 • Selected area — drag a rectangle
 • Visible area — what you see right now
 

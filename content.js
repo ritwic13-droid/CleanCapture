@@ -95,45 +95,72 @@
     });
   }
 
+  // Inspector-style picker: highlights whatever is under the pointer; click captures that element.
   function pickElement() {
     const box = document.createElement('div');
-    box.style.cssText = `all:initial;position:fixed;display:none;z-index:${Z};border:2px solid #2563eb;background:rgba(37,99,235,.15);pointer-events:none;box-sizing:border-box`;
-    const tip = hint('Click a scrollable area, or press Enter for the largest one · Esc to cancel');
-    document.documentElement.appendChild(box);
-    let cur = null;
-    const move = e => {
-      cur = scrollParent(document.elementFromPoint(e.clientX, e.clientY));
-      if (!cur) { box.style.display = 'none'; tip.textContent = 'No scrollable area here — use Full page instead · Esc to cancel'; return; }
-      tip.textContent = 'Click to capture this scrollable area · Esc to cancel';
+    box.style.cssText = `all:initial;position:fixed;display:none;z-index:${Z};border:2px solid #2563eb;background:rgba(37,99,235,.18);pointer-events:none;box-sizing:border-box`;
+    const tag = document.createElement('div');
+    tag.style.cssText = `all:initial;position:fixed;display:none;z-index:${Z};background:#1e3a8a;color:#fff;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis`;
+    const tip = hint('Click the element to capture · ↑ parent · ↓ child · Enter capture · Esc cancel');
+    document.documentElement.append(box, tag);
+    let cur = null, hovered = null;
+    const trail = [];                                  // elements we climbed up from, for ↓
+    const describe = el => {
+      let d = el.tagName.toLowerCase();
+      if (el.id) d += '#' + el.id;
+      const cls = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 2) : [];
+      if (cls.length) d += '.' + cls.join('.');
+      const r = el.getBoundingClientRect();
+      const h = scrollable(el) ? el.scrollHeight : r.height;
+      return `${d}  ${Math.round(r.width)} × ${Math.round(h)}${scrollable(el) ? '  · scrolls' : ''}`;
+    };
+    const show = () => {
+      if (!cur) { box.style.display = tag.style.display = 'none'; return; }
       const b = cur.getBoundingClientRect();
       Object.assign(box.style, { display: 'block', left: b.left + 'px', top: b.top + 'px', width: b.width + 'px', height: b.height + 'px' });
+      tag.textContent = describe(cur);
+      const ty = b.top >= 24 ? b.top - 22 : Math.min(innerHeight - 22, Math.max(0, b.top) + 4);
+      Object.assign(tag.style, { display: 'block', left: Math.max(0, Math.min(b.left, innerWidth - 200)) + 'px', top: ty + 'px' });
+    };
+    const move = e => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (!el || el === hovered) return;               // keep a parent chosen with ↑ until the pointer reaches another element
+      hovered = cur = el; trail.length = 0; show();
     };
     const stop = e => { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); };
+    const EVENTS = ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'];
     const done = () => {
-      box.remove(); tip.remove();
-      removeEventListener('mousemove', move, true); removeEventListener('keydown', key, true);
-      for (const t of ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup']) removeEventListener(t, click, true);
+      box.remove(); tag.remove(); tip.remove();
+      removeEventListener('mousemove', move, true); removeEventListener('keydown', key, true); removeEventListener('scroll', show, true);
+      for (const t of EVENTS) removeEventListener(t, click, true);
     };
-    const key = async e => {
-      if (e.key === 'Escape') { stop(e); done(); }
-      else if (e.key === 'Enter') {                 // keyboard alternative to pointing
-        stop(e); done();
-        if (!handlers.autoElement()) return;
-        await settle(60);
-        chrome.runtime.sendMessage({ t: 'picked', mode: 'element' });
-      }
-    };
-    const click = async e => {
-      stop(e);
-      if (e.type !== 'click') return;
+    const capture = async () => {
       done();
       if (!cur) return;
       S.el = cur;
       await settle(60);
       chrome.runtime.sendMessage({ t: 'picked', mode: 'element' });
     };
-    addEventListener('mousemove', move, true); addEventListener('keydown', key, true);
-    for (const t of ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup']) addEventListener(t, click, true);
+    const key = e => {
+      if (e.key === 'Escape') { stop(e); done(); }
+      else if (e.key === 'Enter') { stop(e); capture(); }
+      else if (e.key === 'ArrowUp' && cur?.parentElement) { stop(e); trail.push(cur); cur = cur.parentElement; show(); }
+      else if (e.key === 'ArrowDown' && cur) { stop(e); cur = trail.pop() || cur.firstElementChild || cur; show(); }
+    };
+    const click = e => { stop(e); if (e.type === 'click') capture(); };
+    addEventListener('mousemove', move, true); addEventListener('keydown', key, true); addEventListener('scroll', show, true);
+    for (const t of EVENTS) addEventListener(t, click, true);
+    cur = document.elementFromPoint(innerWidth / 2, innerHeight / 2);   // starting point for keyboard users
+    show();
+  }
+
+  // --- capturing a plain (non-scrolling) element by scrolling the page past it ---
+  const fixedAncestor = el => { for (; el && el !== document.documentElement; el = el.parentElement) if (getComputedStyle(el).position === 'fixed') return true; return false; };
+  function boxInfo() {
+    const r = S.el.getBoundingClientRect();
+    const x0 = Math.max(0, r.left), y0 = Math.max(0, r.top), x1 = Math.min(innerWidth, r.right), y1 = Math.min(innerHeight, r.bottom);
+    return { sx: x0, sy: y0, sw: Math.max(1, x1 - x0), sh: Math.max(1, y1 - y0), offX: x0 - r.left, offY: y0 - r.top,
+      totalW: Math.max(1, r.width), totalH: Math.max(1, r.height), vw: innerWidth, vh: innerHeight, fixed: fixedAncestor(S.el) };
   }
 
   const handlers = {
@@ -173,6 +200,24 @@
       await settle(80);
       return elInfo();
     },
+    elKind() { return S.el && scrollable(S.el) ? 'scroll' : 'box'; },
+    async boxPrepare() {
+      if (!S.el) throw new Error('Nothing selected');
+      S.orig = { x: scrollX, y: scrollY };
+      addStyle();
+      const fixed = fixedAncestor(S.el);
+      // Floating headers/banners would cover the element while the page scrolls past: hide the unrelated ones.
+      for (const el of document.body.querySelectorAll('*')) {
+        if (el.contains(S.el) || S.el.contains(el)) continue;
+        const p = getComputedStyle(el).position;
+        if (p === 'fixed' && !fixed) el.setAttribute('data-cc-fixed', '');
+        else if (p === 'sticky') el.setAttribute('data-cc-sticky', '');
+      }
+      if (!fixed) window.scrollBy(0, S.el.getBoundingClientRect().top);
+      await settle(200);
+      return boxInfo();
+    },
+    async boxScroll({ dy }) { window.scrollBy(0, dy); await settle(); return boxInfo(); },
     async elScroll({ y }) { S.el.scrollTop = y; await settle(); return elInfo(); },
     async elTail() { S.el.scrollIntoView({ block: 'end' }); await settle(); return elInfo(); },
     restore() { restore(); return true; },
