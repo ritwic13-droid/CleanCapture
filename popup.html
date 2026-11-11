@@ -1,12 +1,34 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><link rel="stylesheet" href="popup.css"></head>
+<html lang="en"><head><meta charset="utf-8"><title>Clean Capture</title><link rel="stylesheet" href="popup.css"></head>
 <body>
-  <h1>Clean Capture</h1>
-  <button data-mode="full"><b>Full page</b><span>Scrolls and stitches the whole page</span><kbd>Alt+Shift+F</kbd></button>
-  <button data-mode="element"><b>Scrollable area</b><span>Pick a chat, table or panel that scrolls</span><kbd>Alt+Shift+E</kbd></button>
-  <button data-mode="area"><b>Selected area</b><span>Drag a rectangle</span><kbd>Alt+Shift+A</kbd></button>
-  <button data-mode="visible"><b>Visible area</b><span>What you see right now</span><kbd>Alt+Shift+V</kbd></button>
-  <p id="err" hidden></p>
-  <footer>No ads · no tracking · no network access.<br>Captures stay on this device. <a href="#" id="clear">Clear saved captures</a></footer>
+  <header><img src="icons/32.png" alt="" width="20" height="20"><h1>Clean Capture</h1></header>
+  <main>
+    <button data-mode="full">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M12 10v7m-3-3 3 3 3-3"/></svg>
+      <span class="t"><b>Full page</b><span>Scrolls and stitches the whole page</span></span><kbd>Alt+Shift+F</kbd>
+    </button>
+    <button data-mode="element">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M16 8v8M8 9h4M8 13h4"/></svg>
+      <span class="t"><b>Scrollable area</b><span>A chat, table or panel that scrolls</span></span><kbd>Alt+Shift+E</kbd>
+    </button>
+    <button data-mode="area">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1" stroke-dasharray="3 3"/></svg>
+      <span class="t"><b>Selected area</b><span>Drag a rectangle</span></span><kbd>Alt+Shift+A</kbd>
+    </button>
+    <button data-mode="visible">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 21h6M12 17v4"/></svg>
+      <span class="t"><b>Visible area</b><span>What you see right now</span></span><kbd>Alt+Shift+V</kbd>
+    </button>
+    <hr>
+    <button id="record">
+      <svg class="rec" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
+      <span class="t"><b>Record screen</b><span>Video of a tab, window or the whole screen</span></span>
+    </button>
+    <p id="err" role="alert"></p>
+  </main>
+  <footer>
+    <p>No ads · no tracking · no network access. Captures stay on this device.</p>
+    <button id="clear" class="link" type="button">Clear saved captures</button> <span id="cleared" role="status"></span>
+  </footer>
   <script type="module" src="popup.js"></script>
 </body></html>

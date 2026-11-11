@@ -1,24 +1,25 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Clean Capture – Editor</title>
+<html lang="en"><head><meta charset="utf-8"><title>Clean Capture – Editor</title>
 <link rel="icon" href="icons/32.png"><link rel="stylesheet" href="editor.css"></head>
 <body>
 <header id="bar">
-  <div class="group" id="tools"></div>
-  <div class="group">
-    <input type="color" id="color" value="#ff3b30" title="Colour">
-    <input type="range" id="size" min="1" max="12" value="4" title="Size">
+  <h1 class="sr-only">Clean Capture editor</h1>
+  <div class="group" id="tools" role="group" aria-label="Drawing tools"></div>
+  <div class="group sep" role="group" aria-label="Style">
+    <input type="color" id="color" value="#ef4444" title="Colour" aria-label="Annotation colour">
+    <input type="range" id="size" min="1" max="12" value="4" title="Size" aria-label="Annotation size">
   </div>
-  <div class="group">
-    <button id="undo" title="Undo (Ctrl+Z)">↶</button>
-    <button id="redo" title="Redo (Ctrl+Shift+Z)">↷</button>
+  <div class="group sep" role="group" aria-label="History">
+    <button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button>
   </div>
-  <div class="group">
-    <button id="zout" title="Zoom out">−</button>
-    <button id="zfit" title="Fit width"><span id="zlabel">100%</span></button>
-    <button id="zin" title="Zoom in">+</button>
+  <div class="group sep" role="group" aria-label="Zoom">
+    <button id="zout" title="Zoom out" aria-label="Zoom out">−</button>
+    <button id="zfit" title="Fit width"><span id="zlabel">100%</span><span class="sr-only"> zoom, fit width</span></button>
+    <button id="zin" title="Zoom in" aria-label="Zoom in">+</button>
   </div>
   <div class="spacer"></div>
-  <div class="group">
+  <div class="group" role="group" aria-label="Export">
     <button id="copy" title="Copy image (Ctrl+C)">Copy</button>
     <button id="print">Print</button>
     <button id="jpg">JPEG</button>
@@ -27,8 +28,10 @@
     <button id="png" class="primary" title="Save PNG (Ctrl+S)">Save PNG</button>
   </div>
 </header>
-<main id="scroller"><div id="stage"><canvas id="view"></canvas></div></main>
+<main id="scroller">
 <div id="toast" hidden></div>
+<div id="sr" class="sr-only" role="status"></div>
+<div id="stage"><canvas id="view" role="img" aria-label="Screenshot being edited. Drawing tools need a mouse or touch; saving, copying and printing work from the keyboard."></canvas></div></main>
 <img id="printimg" alt="">
 <script type="module" src="editor.js"></script>
 </body></html>

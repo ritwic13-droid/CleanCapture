@@ -1,12 +1,24 @@
-:root { color-scheme: light dark; --bg:#fff; --fg:#111827; --mut:#6b7280; --line:#e5e7eb; --hov:#eff6ff; --acc:#2563eb; }
-@media (prefers-color-scheme: dark) { :root { --bg:#111827; --fg:#f3f4f6; --mut:#9ca3af; --line:#374151; --hov:#1e293b; --acc:#60a5fa; } }
-body { margin:0; padding:12px; width:290px; font:13px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
-h1 { font-size:14px; margin:0 0 10px; }
-button { display:grid; grid-template-columns:1fr auto; gap:0 8px; width:100%; text-align:left; padding:9px 10px; margin-bottom:6px;
-  background:none; color:inherit; border:1px solid var(--line); border-radius:8px; font:inherit; cursor:pointer; }
-button:hover, button:focus-visible { background:var(--hov); border-color:var(--acc); outline:none; }
-button span { grid-column:1; color:var(--mut); font-size:12px; }
-kbd { grid-column:2; grid-row:1 / span 2; align-self:center; font:11px system-ui; color:var(--mut); }
-#err { color:#dc2626; margin:6px 0; }
-footer { margin-top:8px; color:var(--mut); font-size:11px; }
-a { color:var(--acc); }
+/* Tokens follow the Tailwind palette and spacing scale (gray / blue-600 accent). */
+:root { color-scheme: light dark; --bg:#fff; --fg:#111827; --mut:#4b5563; --line:#d1d5db; --hov:#eff6ff; --acc:#2563eb; --kbd:#f3f4f6; --err:#b91c1c; --rec:#dc2626; }
+@media (prefers-color-scheme: dark) { :root { --bg:#111827; --fg:#f9fafb; --mut:#d1d5db; --line:#4b5563; --hov:#1f2937; --acc:#93c5fd; --kbd:#1f2937; --err:#fca5a5; --rec:#f87171; } }
+* { box-sizing: border-box; }
+body { margin:0; padding:12px; width:320px; font:13px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+h1 { font-size:15px; font-weight:600; letter-spacing:-.01em; margin:0; }
+main button { display:flex; align-items:center; gap:12px; width:100%; min-height:52px; text-align:left; padding:8px 12px; margin-bottom:8px;
+  background:none; color:inherit; border:1px solid var(--line); border-radius:8px; font:inherit; cursor:pointer; transition:background-color .15s, border-color .15s; }
+main button:hover { background:var(--hov); border-color:var(--acc); }
+button:focus-visible { outline:2px solid var(--acc); outline-offset:2px; }
+svg { flex:none; width:20px; height:20px; fill:none; stroke:var(--acc); stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+svg.rec { stroke:var(--rec); color:var(--rec); }
+.t { flex:1; display:flex; flex-direction:column; }
+.t b { font-weight:600; }
+.t span { color:var(--mut); font-size:12px; }
+kbd { flex:none; font:11px system-ui,sans-serif; color:var(--mut); background:var(--kbd); border-radius:4px; padding:2px 6px; white-space:nowrap; }
+hr { border:0; border-top:1px solid var(--line); margin:12px 0; }
+#err { color:var(--err); margin:8px 0 0; }
+#err:empty { display:none; }
+footer { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); color:var(--mut); font-size:12px; }
+footer p { margin:0 0 4px; }
+.link { background:none; border:0; padding:4px 0; font:inherit; color:var(--acc); text-decoration:underline; cursor:pointer; border-radius:4px; }
+@media (prefers-reduced-motion: reduce) { main button { transition:none; } }

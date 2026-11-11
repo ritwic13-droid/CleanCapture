@@ -3,7 +3,7 @@
 **Name:** Clean Capture – Full Page & Scrollable Area Screenshot
 **Category:** Tools (Productivity)
 **Summary (132 chars max):**
-Full-page, scrollable-area and region screenshots with an annotation editor. PNG/JPEG/PDF. No ads, no tracking, works offline.
+Full-page and scrollable-area screenshots with an editor, plus screen recording. PNG/JPEG/PDF. No ads, no tracking.
 
 **Description:**
 Clean Capture takes screenshots and nothing else.
@@ -17,9 +17,11 @@ Built-in editor: crop, arrows, lines, rectangles, ellipses, pen, highlighter, te
 Export: PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 Shortcuts: Alt+Shift+F / E / A / V.
 
+Screen recording: record a tab, a window or the whole screen as WebM or MP4, with optional tab/system audio and microphone, pause and resume.
+
 Privacy: no ads, no analytics, no accounts, no network access at all. Screenshots never leave your device.
 
-**Single purpose:** Capture screenshots of web pages and annotate/export them locally.
+**Single purpose:** Capture screenshots and screen recordings of web pages and annotate/export them locally.
 
 **Permission justifications**
 - `activeTab`: capture the tab the user explicitly invokes the extension on.

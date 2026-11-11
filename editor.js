@@ -35,13 +35,17 @@ for (const k of Object.keys(ICONS)) {
 }
 function setTool(k) {
   tool = k; selected = -1;
-  for (const b of document.querySelectorAll('#tools button')) b.classList.toggle('active', b.dataset.tool === k);
+  for (const b of document.querySelectorAll('#tools button')) {
+    b.classList.toggle('active', b.dataset.tool === k);
+    b.setAttribute('aria-pressed', b.dataset.tool === k);
+  }
   view.style.cursor = k === 'select' ? 'default' : k === 'text' ? 'text' : 'crosshair';
   schedule();
 }
 
 function toast(msg, ms = 2200) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  $('#sr').textContent = msg;                    // announce to screen readers
   clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), ms);
 }
 
@@ -279,6 +283,7 @@ function openText(p) {
   const fs = fontPx(st) * zoom;
   Object.assign(ta.style, { left: (p.x - c.x) * zoom + 'px', top: (p.y - c.y) * zoom + 'px', fontSize: fs + 'px', color: st.color });
   ta.rows = 1; ta.cols = 12;
+  ta.setAttribute('aria-label', 'Annotation text. Enter to place, Escape to cancel.');
   const grow = () => { ta.rows = ta.value.split('\n').length; ta.cols = Math.max(12, ...ta.value.split('\n').map(l => l.length + 2)); };
   let cancelled = false;
   ta.addEventListener('input', grow);

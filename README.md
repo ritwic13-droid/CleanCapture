@@ -1,7 +1,7 @@
 # Clean Capture
 
 Full-page, scrollable-area, selected-area and visible-area screenshots with an annotation editor.
-Exports PNG, JPEG and PDF. No ads, no tracking, no network access. See [PRIVACY.md](PRIVACY.md).
+Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen) to WebM or MP4. No ads, no tracking, no network access. See [PRIVACY.md](PRIVACY.md).
 
 ## Install from source
 

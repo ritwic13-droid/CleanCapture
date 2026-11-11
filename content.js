@@ -58,6 +58,7 @@
 
   function hint(text) {
     const h = document.createElement('div');
+    h.setAttribute('role', 'status');
     h.textContent = text;
     h.style.cssText = `all:initial;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:${Z};background:#111827;color:#fff;font:13px/1.4 system-ui,sans-serif;padding:8px 14px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.35);pointer-events:none`;
     document.documentElement.appendChild(h);
@@ -97,7 +98,7 @@
   function pickElement() {
     const box = document.createElement('div');
     box.style.cssText = `all:initial;position:fixed;display:none;z-index:${Z};border:2px solid #2563eb;background:rgba(37,99,235,.15);pointer-events:none;box-sizing:border-box`;
-    const tip = hint('Click a scrollable area · Esc to cancel');
+    const tip = hint('Click a scrollable area, or press Enter for the largest one · Esc to cancel');
     document.documentElement.appendChild(box);
     let cur = null;
     const move = e => {
@@ -113,7 +114,15 @@
       removeEventListener('mousemove', move, true); removeEventListener('keydown', key, true);
       for (const t of ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup']) removeEventListener(t, click, true);
     };
-    const key = e => { if (e.key === 'Escape') { stop(e); done(); } };
+    const key = async e => {
+      if (e.key === 'Escape') { stop(e); done(); }
+      else if (e.key === 'Enter') {                 // keyboard alternative to pointing
+        stop(e); done();
+        if (!handlers.autoElement()) return;
+        await settle(60);
+        chrome.runtime.sendMessage({ t: 'picked', mode: 'element' });
+      }
+    };
     const click = async e => {
       stop(e);
       if (e.type !== 'click') return;

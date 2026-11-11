@@ -31,6 +31,9 @@ PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 <b>Shortcuts</b>
 Alt+Shift+F (full page), E (scrollable area), A (selected area), V (visible area).
 
+<b>Screen recording</b>
+Record a tab, a window or the whole screen as WebM or MP4, with optional audio and microphone, pause and resume.
+
 <b>Private by design</b>
 No ads, no analytics, no accounts and no network access at all. Screenshots never leave your device. The source is open: https://github.com/ritwic13-droid/CleanCapture
 

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Clean Capture – Screen recorder</title>
+<link rel="icon" href="icons/32.png"><link rel="stylesheet" href="recorder.css"></head>
+<body>
+<main>
+  <header><img src="icons/48.png" alt="" width="28" height="28"><h1>Screen recorder</h1></header>
+
+  <section id="setup">
+    <p class="lead">Record a tab, a window or your whole screen. The recording is made and saved on this device only.</p>
+    <label><input type="checkbox" id="sysAudio" checked> Include tab / system audio <small>(tick “Share audio” in the browser’s picker)</small></label>
+    <label><input type="checkbox" id="mic"> Include microphone</label>
+    <label class="row">Format <select id="format"></select></label>
+    <label class="row">Quality <select id="quality">
+      <option value="2500000">Small file</option>
+      <option value="5000000" selected>Standard</option>
+      <option value="10000000">High</option>
+    </select></label>
+    <button id="start" class="primary">Start recording</button>
+    <p class="note">Keep this tab open while recording. You will choose what to share in the next step.</p>
+  </section>
+
+  <section id="live" hidden>
+    <div id="clock" role="timer" aria-label="Recording time"><span id="dot"></span><span id="time">00:00</span></div>
+    <div class="buttons">
+      <button id="pause">Pause</button>
+      <button id="stop" class="danger">Stop</button>
+    </div>
+    <p class="note">Recording… switch to what you are sharing. Come back here to stop, or use the browser’s “Stop sharing” button.</p>
+  </section>
+
+  <section id="done" hidden>
+    <video id="preview" controls aria-label="Recording preview"></video>
+    <p id="info" class="note"></p>
+    <div class="buttons">
+      <button id="save" class="primary">Save recording</button>
+      <button id="again">Discard and record again</button>
+    </div>
+  </section>
+
+  <p id="msg" role="status"></p>
+</main>
+<script type="module" src="recorder.js"></script>
+</body></html>
