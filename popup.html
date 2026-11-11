@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <h1>Clean Capture</h1>
+  <button data-mode="full"><b>Full page</b><span>Scrolls and stitches the whole page</span><kbd>Alt+Shift+F</kbd></button>
+  <button data-mode="element"><b>Scrollable area</b><span>Pick a chat, table or panel that scrolls</span><kbd>Alt+Shift+E</kbd></button>
+  <button data-mode="area"><b>Selected area</b><span>Drag a rectangle</span><kbd>Alt+Shift+A</kbd></button>
+  <button data-mode="visible"><b>Visible area</b><span>What you see right now</span><kbd>Alt+Shift+V</kbd></button>
+  <p id="err" hidden></p>
+  <footer>No ads · no tracking · no network access.<br>Captures stay on this device. <a href="#" id="clear">Clear saved captures</a></footer>
+  <script type="module" src="popup.js"></script>
+</body></html>

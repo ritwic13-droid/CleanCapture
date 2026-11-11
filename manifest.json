@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Clean Capture – Full Page & Scrollable Area Screenshot",
+  "short_name": "Clean Capture",
+  "version": "1.0.0",
+  "description": "Full-page, scrollable-area and region screenshots with an annotation editor. PNG/JPEG/PDF. No ads, no tracking, works offline.",
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "action": { "default_popup": "popup.html", "default_title": "Clean Capture", "default_icon": { "16": "icons/16.png", "32": "icons/32.png" } },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["activeTab", "scripting"],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; connect-src 'none'; object-src 'none'"
+  },
+  "commands": {
+    "capture-full": { "suggested_key": { "default": "Alt+Shift+F" }, "description": "Capture full page" },
+    "capture-visible": { "suggested_key": { "default": "Alt+Shift+V" }, "description": "Capture visible area" },
+    "capture-area": { "suggested_key": { "default": "Alt+Shift+A" }, "description": "Capture selected area" },
+    "capture-element": { "suggested_key": { "default": "Alt+Shift+E" }, "description": "Capture scrollable area" }
+  }
+}

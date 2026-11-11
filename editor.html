@@ -1,0 +1,34 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Clean Capture – Editor</title>
+<link rel="icon" href="icons/32.png"><link rel="stylesheet" href="editor.css"></head>
+<body>
+<header id="bar">
+  <div class="group" id="tools"></div>
+  <div class="group">
+    <input type="color" id="color" value="#ff3b30" title="Colour">
+    <input type="range" id="size" min="1" max="12" value="4" title="Size">
+  </div>
+  <div class="group">
+    <button id="undo" title="Undo (Ctrl+Z)">↶</button>
+    <button id="redo" title="Redo (Ctrl+Shift+Z)">↷</button>
+  </div>
+  <div class="group">
+    <button id="zout" title="Zoom out">−</button>
+    <button id="zfit" title="Fit width"><span id="zlabel">100%</span></button>
+    <button id="zin" title="Zoom in">+</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="group">
+    <button id="copy" title="Copy image (Ctrl+C)">Copy</button>
+    <button id="print">Print</button>
+    <button id="jpg">JPEG</button>
+    <button id="pdfA4" title="PDF split into A4 pages">PDF (A4)</button>
+    <button id="pdfLong" title="PDF as one long page">PDF (1 page)</button>
+    <button id="png" class="primary" title="Save PNG (Ctrl+S)">Save PNG</button>
+  </div>
+</header>
+<main id="scroller"><div id="stage"><canvas id="view"></canvas></div></main>
+<div id="toast" hidden></div>
+<img id="printimg" alt="">
+<script type="module" src="editor.js"></script>
+</body></html>

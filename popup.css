@@ -1,0 +1,12 @@
+:root { color-scheme: light dark; --bg:#fff; --fg:#111827; --mut:#6b7280; --line:#e5e7eb; --hov:#eff6ff; --acc:#2563eb; }
+@media (prefers-color-scheme: dark) { :root { --bg:#111827; --fg:#f3f4f6; --mut:#9ca3af; --line:#374151; --hov:#1e293b; --acc:#60a5fa; } }
+body { margin:0; padding:12px; width:290px; font:13px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+h1 { font-size:14px; margin:0 0 10px; }
+button { display:grid; grid-template-columns:1fr auto; gap:0 8px; width:100%; text-align:left; padding:9px 10px; margin-bottom:6px;
+  background:none; color:inherit; border:1px solid var(--line); border-radius:8px; font:inherit; cursor:pointer; }
+button:hover, button:focus-visible { background:var(--hov); border-color:var(--acc); outline:none; }
+button span { grid-column:1; color:var(--mut); font-size:12px; }
+kbd { grid-column:2; grid-row:1 / span 2; align-self:center; font:11px system-ui; color:var(--mut); }
+#err { color:#dc2626; margin:6px 0; }
+footer { margin-top:8px; color:var(--mut); font-size:11px; }
+a { color:var(--acc); }
