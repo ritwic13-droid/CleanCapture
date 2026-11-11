@@ -22,3 +22,12 @@ footer { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); co
 footer p { margin:0 0 4px; }
 .link { background:none; border:0; padding:4px 0; font:inherit; color:var(--acc); text-decoration:underline; cursor:pointer; border-radius:4px; }
 @media (prefers-reduced-motion: reduce) { main button { transition:none; } }
+/* Screenshot / Record switch */
+.seg { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin-bottom:12px; background:var(--kbd); border-radius:8px; }
+.seg label { position:relative; cursor:pointer; }
+.seg input { position:absolute; inset:0; opacity:0; margin:0; cursor:pointer; }
+.seg span { display:block; text-align:center; padding:6px 8px; border-radius:6px; font-weight:600; color:var(--mut); transition:background-color .15s, color .15s; }
+.seg input:checked + span { background:var(--bg); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.25); }
+.seg input:focus-visible + span { outline:2px solid var(--acc); outline-offset:2px; }
+[hidden] { display:none !important; }
+.note { color:var(--mut); font-size:12px; margin:4px 0 0; }

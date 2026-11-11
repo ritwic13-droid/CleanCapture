@@ -14,12 +14,13 @@ Full-page, scrollable-area and region screenshots with a built-in annotation edi
 **Description:**
 Clean Capture takes screenshots and nothing else.
 
-<b>Four ways to capture</b>
+<b>Five ways to take a screenshot</b>
 <ul>
 <li>Full page — scrolls and stitches the whole page</li>
 <li>Pick element — hover to highlight any part of the page (a card, table, chat or scrolling panel) and click to capture all of it</li>
 <li>Selected area — drag a rectangle</li>
-<li>Visible area — what you see right now</li>
+<li>This tab — the part of the page you can see now</li>
+<li>Window or screen — another window, app or the whole screen</li>
 </ul>
 
 <b>Built-in editor</b>
@@ -29,10 +30,10 @@ Crop with drag handles, shapes (rectangle, ellipse, line, arrow), pen, highlight
 PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 
 <b>Shortcuts</b>
-Alt+Shift+F (full page), E (pick element), A (selected area), V (visible area).
+Alt+Shift+F (full page), E (pick element), A (selected area), V (this tab).
 
 <b>Screen recording</b>
-Record a tab, a window or the whole screen as WebM or MP4, with optional audio and microphone, pause and resume.
+Switch the popup to "Record video" and record a picked element, a selected area, a browser tab, or a window or the whole screen. WebM or MP4, optional audio and microphone, pause and resume. (Element and area recording are not available in Firefox.)
 
 <b>Private by design</b>
 No ads, no analytics, no accounts and no network access at all. Screenshots never leave your device. The source is open: https://github.com/ritwic13-droid/CleanCapture

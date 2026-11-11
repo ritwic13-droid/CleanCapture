@@ -1,6 +1,70 @@
 // Screen recorder. Uses the browser's own screen-share picker (no extra permissions) and
 // keeps everything in memory on this device until the user saves the file.
 const $ = s => document.querySelector(s);
+import { putCapture } from './db.js';
+
+// How this page was opened: ?surface=browser|monitor preselects the picker tab, ?crop=x,y,w,h,vw,vh records
+// only that part of a tab, ?shot=1 takes a single screenshot of a window or screen instead of a video.
+const Q = new URLSearchParams(location.search);
+const SHOT = Q.has('shot'), SURFACE = Q.get('surface');
+const CROP = Q.has('crop') ? (([x, y, w, h, vw, vh]) => ({ x, y, w, h, vw, vh }))(Q.get('crop').split(',').map(Number)) : null;
+const canCrop = 'MediaStreamTrackProcessor' in window && 'MediaStreamTrackGenerator' in window;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+if (SHOT) {
+  $('#heading').textContent = 'Screenshot a window or screen'; document.title = 'Clean Capture – Screenshot';
+  $('#lead').textContent = 'Choose a window, an app or your whole screen. After a 3-second countdown it is captured and opened in the editor.';
+  $('#recopts').hidden = true; $('#start').textContent = 'Choose what to capture';
+  $('#startnote').textContent = 'The countdown gives you time to bring the right window to the front.';
+} else if (CROP) {
+  $('#heading').textContent = 'Record part of a page';
+  $('#lead').textContent = `Area selected: ${CROP.w} × ${CROP.h}. Click Start, then choose the tab “${(Q.get('title') || 'this tab').slice(0, 60)}” in the browser's picker. Only the selected area is recorded.`;
+} else if (SURFACE === 'browser') {
+  $('#heading').textContent = 'Record a browser tab';
+  $('#lead').textContent = 'Click Start, then choose the tab to record. The recording is made and saved on this device only.';
+} else if (SURFACE === 'monitor') {
+  $('#heading').textContent = 'Record a window or screen';
+  $('#lead').textContent = 'Click Start, then choose a window, an app or your whole screen. The recording is made and saved on this device only.';
+}
+
+// Crop every video frame to the chosen rectangle (viewport CSS pixels of the captured tab).
+function cropTrack(track, c) {
+  const proc = new MediaStreamTrackProcessor({ track }), gen = new MediaStreamTrackGenerator({ kind: 'video' });
+  const even = n => Math.max(2, Math.floor(n / 2) * 2);
+  let cv = null, g = null;
+  proc.readable.pipeThrough(new TransformStream({
+    transform(frame, ctl) {
+      try {
+        const k = frame.displayWidth / c.vw;
+        const x = Math.min(Math.round(c.x * k), frame.displayWidth - 2), y = Math.min(Math.round(c.y * k), frame.displayHeight - 2);
+        const w = even(Math.min(c.w * k, frame.displayWidth - x)), h = even(Math.min(c.h * k, frame.displayHeight - y));
+        if (!cv || cv.width !== w || cv.height !== h) { cv = new OffscreenCanvas(w, h); g = cv.getContext('2d', { alpha: false }); }
+        g.drawImage(frame, x, y, w, h, 0, 0, w, h);          // copy just the chosen rectangle
+        ctl.enqueue(new VideoFrame(cv, { timestamp: frame.timestamp, duration: frame.duration ?? undefined }));
+      } finally { frame.close(); }
+    }
+  })).pipeTo(gen.writable).catch(() => {});
+  return gen;
+}
+
+// Single screenshot of a window or screen: wait 3 s, grab one frame, open it in the editor.
+async function grab(display) {
+  const video = document.createElement('video');
+  video.muted = true; video.srcObject = display;
+  await video.play().catch(() => {});
+  $('#livebuttons').hidden = true; $('#dot').classList.add('paused');
+  $('#livenote').textContent = 'Bring the window you want to the front…';
+  show('live');
+  for (let i = 3; i > 0; i--) { $('#time').textContent = i; document.title = `Capturing in ${i}…`; await sleep(1000); }
+  const w = video.videoWidth, h = video.videoHeight;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  cv.getContext('2d').drawImage(video, 0, 0);
+  display.getTracks().forEach(t => t.stop());
+  if (!w || !h) { show('setup'); return say('Nothing could be captured. Please try again.'); }
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  await putCapture({ id, created: Date.now(), title: 'Screen capture', frames: [{ blob, vw: w, sx: 0, sy: 0, sw: w, sh: h, dx: 0, dy: 0 }], w, h });
+  location.replace('editor.html?id=' + id);
+}
 
 const FORMATS = [
   ['WebM (VP9)', 'video/webm;codecs=vp9,opus', 'webm'],
@@ -37,10 +101,12 @@ async function start() {
   if (!FORMATS.length || !navigator.mediaDevices?.getDisplayMedia) return say('This browser does not support screen recording.');
   let display;
   try {
-    display = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: $('#sysAudio').checked });
+    const surface = SHOT ? 'monitor' : CROP ? 'browser' : SURFACE;
+    display = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30, ...(surface ? { displaySurface: surface } : {}) }, audio: !SHOT && $('#sysAudio').checked });
   } catch (e) {
     return say(e.name === 'NotAllowedError' ? 'Nothing was shared, so nothing was recorded.' : 'Could not start: ' + e.message);
   }
+  if (SHOT) return grab(display);
   streams = [display];
   const audio = [];
   if (display.getAudioTracks().length) audio.push(display);
@@ -48,7 +114,15 @@ async function start() {
     try { const m = await navigator.mediaDevices.getUserMedia({ audio: true }); streams.push(m); audio.push(m); }
     catch { say('Microphone not available — recording without it.'); }
   }
-  const tracks = [display.getVideoTracks()[0]];
+  const source = display.getVideoTracks()[0];
+  let video = source;
+  if (CROP) {
+    const kind = source.getSettings().displaySurface;
+    if (!canCrop) say('This browser cannot record just an area, so the whole tab is being recorded.');
+    else if (kind && kind !== 'browser') say('Area recording only works on a browser tab, so everything you shared is being recorded.');
+    else video = cropTrack(source, CROP);
+  }
+  const tracks = [video];
   if (audio.length === 1) tracks.push(audio[0].getAudioTracks()[0]);
   else if (audio.length > 1) {                      // mix system audio + microphone into one track
     audioCtx = new AudioContext();
@@ -66,7 +140,7 @@ async function start() {
   rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
   rec.onstop = finish;
   rec.onerror = e => say('Recording error: ' + (e.error?.message || 'unknown'));
-  tracks[0].addEventListener('ended', stop);        // browser's "Stop sharing" button
+  source.addEventListener('ended', stop);           // browser's "Stop sharing" button
   rec.start(1000);
   activeMs = 0; resumedAt = performance.now();
   $('#pause').textContent = 'Pause'; $('#dot').classList.remove('paused');

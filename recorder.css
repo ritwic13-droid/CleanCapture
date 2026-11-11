@@ -29,3 +29,5 @@ video { width: 100%; max-height: 60vh; background: #000; border-radius: 6px; }
 #msg { color: #d1d5db; min-height: 1.5em; margin: 16px 0 0; }
 #msg.error { color: #fca5a5; }
 @media (prefers-reduced-motion: reduce) { #dot { animation: none; } button { transition: none; } }
+#recopts { display: flex; flex-direction: column; gap: 16px; }
+#recopts[hidden], .buttons[hidden] { display: none; }

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Clean Capture – Full Page & Scrollable Area Screenshot",
   "short_name": "Clean Capture",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Full-page and scrollable-area screenshots with an editor, plus screen recording. PNG/JPEG/PDF. No ads, no tracking.",
   "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
   "action": { "default_popup": "popup.html", "default_title": "Clean Capture", "default_icon": { "16": "icons/16.png", "32": "icons/32.png" } },
@@ -13,7 +13,7 @@
   },
   "commands": {
     "capture-full": { "suggested_key": { "default": "Alt+Shift+F" }, "description": "Capture full page" },
-    "capture-visible": { "suggested_key": { "default": "Alt+Shift+V" }, "description": "Capture visible area" },
+    "capture-visible": { "suggested_key": { "default": "Alt+Shift+V" }, "description": "Capture this tab (visible area)" },
     "capture-area": { "suggested_key": { "default": "Alt+Shift+A" }, "description": "Capture selected area" },
     "capture-element": { "suggested_key": { "default": "Alt+Shift+E" }, "description": "Pick an element to capture" }
   }

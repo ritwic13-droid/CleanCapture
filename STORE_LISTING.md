@@ -11,7 +11,8 @@ Clean Capture takes screenshots and nothing else.
 • Full page — scrolls and stitches the whole page
 • Pick element — hover to highlight any part of the page (a card, table, chat or scrolling panel) and click to capture all of it
 • Selected area — drag a rectangle
-• Visible area — what you see right now
+• This tab — the part of the page you can see now
+• Window or screen — another window, app or the whole screen
 
 Built-in editor: crop with drag handles, shapes (rectangle, ellipse, line, arrow), pen, highlighter, eraser, resizable text, numbered steps, magnifier, blur (rectangle, ellipse or brush), opacity, undo/redo.
 Select text inside the screenshot (offline text recognition), copy it or search it on Google.
@@ -19,7 +20,7 @@ New screenshots are copied to the clipboard automatically.
 Export: PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 Shortcuts: Alt+Shift+F / E / A / V.
 
-Screen recording: record a tab, a window or the whole screen as WebM or MP4, with optional tab/system audio and microphone, pause and resume.
+Screen recording: switch the popup to "Record video" and record a picked element, a selected area, a browser tab, or a window or the whole screen. WebM or MP4, optional tab/system audio and microphone, pause and resume. (Element and area recording need Chrome or Edge.)
 
 Privacy: no ads, no analytics, no accounts, no network access at all. Screenshots never leave your device.
 

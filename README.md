@@ -1,6 +1,6 @@
 # Clean Capture
 
-Full-page, scrollable-area, selected-area and visible-area screenshots with an annotation editor.
+Screenshots (full page, picked element, selected area, this tab, another window or screen) with an annotation editor, and screen recording (picked element, selected area, tab, window or screen).
 Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen) to WebM or MP4. No ads, no tracking, no network access. See [PRIVACY.md](PRIVACY.md).
 
 ## Install from source
@@ -19,7 +19,7 @@ Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen)
 `xcrun safari-web-extension-converter dist/chrome --app-name "Clean Capture"`
 
 ## Use
-Click the toolbar icon and pick a mode, or use Alt+Shift+F (full page), E (pick element), A (selected area), V (visible area).
+Click the toolbar icon and pick a mode, or use Alt+Shift+F (full page), E (pick element), A (selected area), V (this tab).
 
 ## Build store packages
 `./build.sh` writes `dist/clean-capture-chrome.zip` and `dist/clean-capture-firefox.zip`. Listing text is in [STORE_LISTING.md](STORE_LISTING.md) (Chrome) and [FIREFOX_LISTING.md](FIREFOX_LISTING.md) (Firefox).

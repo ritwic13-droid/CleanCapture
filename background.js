@@ -135,7 +135,7 @@ function fail(tab, e) {
   setTimeout(() => badge(tab.id, ''), 4000);
 }
 
-async function start(mode, tab) {
+async function start(mode, tab, purpose = 'shot') {
   if (!tab || tab.id == null) throw new Error('No active tab');
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
@@ -147,8 +147,8 @@ async function start(mode, tab) {
     }
     throw new Error('This page cannot be captured (browser pages and the Web Store block extensions). Try "Visible area".');
   }
-  if (mode === 'area') return void await send(tab.id, { t: 'pickArea' });
-  if (mode === 'element') return void await send(tab.id, { t: 'pickElement' });
+  if (mode === 'area') return void await send(tab.id, { t: 'pickArea', purpose });
+  if (mode === 'element') return void await send(tab.id, { t: 'pickElement', purpose });
   const run = mode === 'full' ? runFull : runVisible;
   run(tab).catch(e => fail(tab, e));
 }
@@ -156,9 +156,15 @@ async function start(mode, tab) {
 chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   if (msg.t === 'start') {
     chrome.tabs.get(msg.tabId)
-      .then(tab => start(msg.mode, tab))
+      .then(tab => start(msg.mode, tab, msg.purpose))
       .then(() => respond({ ok: true }), e => respond({ ok: false, error: e.message }));
     return true;
+  }
+  if (msg.t === 'picked' && msg.purpose === 'record' && sender.tab) {
+    // Record just this region: hand the rectangle to the recorder page.
+    const r = msg.rect, q = new URLSearchParams({ crop: [r.x, r.y, r.w, r.h, r.vw, r.vh].map(n => Math.round(n)).join(','), title: sender.tab.title || 'this tab' });
+    chrome.tabs.create({ url: chrome.runtime.getURL('recorder.html?' + q), index: sender.tab.index + 1 });
+    return;
   }
   if (msg.t === 'picked' && sender.tab) {
     const run = msg.mode === 'area' ? runArea(sender.tab, msg.rect) : runElement(sender.tab);

@@ -3,10 +3,11 @@
 <link rel="icon" href="icons/32.png"><link rel="stylesheet" href="recorder.css"></head>
 <body>
 <main>
-  <header><img src="icons/48.png" alt="" width="28" height="28"><h1>Screen recorder</h1></header>
+  <header><img src="icons/48.png" alt="" width="28" height="28"><h1 id="heading">Screen recorder</h1></header>
 
   <section id="setup">
-    <p class="lead">Record a tab, a window or your whole screen. The recording is made and saved on this device only.</p>
+    <p class="lead" id="lead">Record a tab, a window or your whole screen. The recording is made and saved on this device only.</p>
+    <div id="recopts">
     <label><input type="checkbox" id="sysAudio" checked> Include tab / system audio <small>(tick “Share audio” in the browser’s picker)</small></label>
     <label><input type="checkbox" id="mic"> Include microphone</label>
     <label class="row">Format <select id="format"></select></label>
@@ -15,17 +16,18 @@
       <option value="5000000" selected>Standard</option>
       <option value="10000000">High</option>
     </select></label>
+    </div>
     <button id="start" class="primary">Start recording</button>
-    <p class="note">Keep this tab open while recording. You will choose what to share in the next step.</p>
+    <p class="note" id="startnote">Keep this tab open while recording. You will choose what to share in the next step.</p>
   </section>
 
   <section id="live" hidden>
     <div id="clock" role="timer" aria-label="Recording time"><span id="dot"></span><span id="time">00:00</span></div>
-    <div class="buttons">
+    <div class="buttons" id="livebuttons">
       <button id="pause">Pause</button>
       <button id="stop" class="danger">Stop</button>
     </div>
-    <p class="note">Recording… switch to what you are sharing. Come back here to stop, or use the browser’s “Stop sharing” button.</p>
+    <p class="note" id="livenote">Recording… switch to what you are sharing. Come back here to stop, or use the browser’s “Stop sharing” button.</p>
   </section>
 
   <section id="done" hidden>

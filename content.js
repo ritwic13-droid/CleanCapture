@@ -65,13 +65,13 @@
     return h;
   }
 
-  function pickArea() {
+  function pickArea(purpose = 'shot') {
     const ov = document.createElement('div');
     ov.style.cssText = `all:initial;position:fixed;inset:0;z-index:${Z};cursor:crosshair;background:rgba(0,0,0,.25)`;
     const box = document.createElement('div');
     box.style.cssText = 'all:initial;position:fixed;display:none;border:1px solid #fff;outline:1px dashed #2563eb;box-shadow:0 0 0 99999px rgba(0,0,0,.45);pointer-events:none';
     ov.appendChild(box);
-    const tip = hint('Drag to select an area · Esc to cancel');
+    const tip = hint(purpose === 'record' ? 'Drag to select the area to record · Esc to cancel' : 'Drag to select an area · Esc to cancel');
     document.documentElement.appendChild(ov);
     let x0, y0, rect = null;
     const done = () => { ov.remove(); tip.remove(); removeEventListener('keydown', key, true); };
@@ -91,17 +91,17 @@
       done();
       if (!rect || rect.w < 5 || rect.h < 5) return;
       await settle(60);
-      chrome.runtime.sendMessage({ t: 'picked', mode: 'area', rect: { ...rect, vw: innerWidth, vh: innerHeight } });
+      chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, rect: { ...rect, vw: innerWidth, vh: innerHeight } });
     });
   }
 
   // Inspector-style picker: highlights whatever is under the pointer; click captures that element.
-  function pickElement() {
+  function pickElement(purpose = 'shot') {
     const box = document.createElement('div');
     box.style.cssText = `all:initial;position:fixed;display:none;z-index:${Z};border:2px solid #2563eb;background:rgba(37,99,235,.18);pointer-events:none;box-sizing:border-box`;
     const tag = document.createElement('div');
     tag.style.cssText = `all:initial;position:fixed;display:none;z-index:${Z};background:#1e3a8a;color:#fff;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis`;
-    const tip = hint('Click the element to capture · ↑ parent · ↓ child · Enter capture · Esc cancel');
+    const tip = hint(`Click the element to ${purpose === 'record' ? 'record' : 'capture'} · ↑ parent · ↓ child · Enter confirm · Esc cancel`);
     document.documentElement.append(box, tag);
     let cur = null, hovered = null;
     const trail = [];                                  // elements we climbed up from, for ↓
@@ -137,6 +137,14 @@
     const capture = async () => {
       done();
       if (!cur) return;
+      if (purpose === 'record') {                      // record the part of the element that is on screen
+        const b = cur.getBoundingClientRect();
+        const x = Math.max(0, b.left), y = Math.max(0, b.top), w = Math.min(innerWidth, b.right) - x, h = Math.min(innerHeight, b.bottom) - y;
+        if (w < 8 || h < 8) return;
+        await settle(60);
+        chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, rect: { x, y, w, h, vw: innerWidth, vh: innerHeight } });
+        return;
+      }
       S.el = cur;
       await settle(60);
       chrome.runtime.sendMessage({ t: 'picked', mode: 'element' });
@@ -221,8 +229,8 @@
     async elScroll({ y }) { S.el.scrollTop = y; await settle(); return elInfo(); },
     async elTail() { S.el.scrollIntoView({ block: 'end' }); await settle(); return elInfo(); },
     restore() { restore(); return true; },
-    pickArea() { pickArea(); return true; },
-    pickElement() { pickElement(); return true; }
+    pickArea({ purpose }) { pickArea(purpose); return true; },
+    pickElement({ purpose }) { pickElement(purpose); return true; }
   };
 
   chrome.runtime.onMessage.addListener((msg, _s, respond) => {
