@@ -3,7 +3,7 @@
 # and dist/clean-capture-firefox.zip (Firefox 140+).
 set -euo pipefail
 cd "$(dirname "$0")"
-FILES="manifest.json background.js content.js db.js editor.html editor.css editor.js popup.html popup.css popup.js recorder.html recorder.css recorder.js icons"
+FILES="manifest.json background.js content.js db.js editor.html editor.css editor.js popup.html popup.css popup.js recorder.html recorder.css recorder.js icons vendor"
 rm -rf dist && mkdir -p dist/chrome dist/firefox
 cp -r $FILES dist/chrome/
 cp -r $FILES dist/firefox/

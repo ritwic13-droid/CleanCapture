@@ -13,7 +13,9 @@ Clean Capture takes screenshots and nothing else.
 • Selected area — drag a rectangle
 • Visible area — what you see right now
 
-Built-in editor: crop, arrows, lines, rectangles, ellipses, pen, highlighter, text, numbered steps, blur/pixelate, undo/redo.
+Built-in editor: crop with drag handles, shapes (rectangle, ellipse, line, arrow), pen, highlighter, eraser, resizable text, numbered steps, magnifier, blur (rectangle, ellipse or brush), opacity, undo/redo.
+Select text inside the screenshot (offline text recognition), copy it or search it on Google.
+New screenshots are copied to the clipboard automatically.
 Export: PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 Shortcuts: Alt+Shift+F / E / A / V.
 
@@ -26,7 +28,8 @@ Privacy: no ads, no analytics, no accounts, no network access at all. Screenshot
 **Permission justifications**
 - `activeTab`: capture the tab the user explicitly invokes the extension on.
 - `scripting`: inject the capture helper (scrolling, area/element picker) into that tab after the user's click.
-- Host permissions: none. Remote code: none.
+- `clipboardWrite`: copy the new screenshot to the clipboard automatically when the editor opens.
+- Host permissions: none. Remote code: none. Bundled library: Tesseract.js (Apache-2.0) for offline text recognition, see vendor/tesseract/README.md.
 
 **Data usage form:** collects no user data; tick all three compliance certifications.
 **Privacy policy URL:** link to PRIVACY.md in the GitHub repo.

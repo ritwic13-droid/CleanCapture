@@ -4,10 +4,11 @@
 <body>
 <header id="bar">
   <h1 class="sr-only">Clean Capture editor</h1>
-  <div class="group" id="tools" role="group" aria-label="Drawing tools"></div>
+  <div class="group" id="tools" role="group" aria-label="Tools"></div>
   <div class="group sep" role="group" aria-label="Style">
     <input type="color" id="color" value="#ef4444" title="Colour" aria-label="Annotation colour">
     <input type="range" id="size" min="1" max="12" value="4" title="Size" aria-label="Annotation size">
+    <input type="range" id="opacity" min="10" max="100" step="10" value="100" title="Opacity" aria-label="Annotation opacity">
   </div>
   <div class="group sep" role="group" aria-label="History">
     <button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
@@ -28,10 +29,26 @@
     <button id="png" class="primary" title="Save PNG (Ctrl+S)">Save PNG</button>
   </div>
 </header>
+<div id="cropbar" class="ctx" role="group" aria-label="Crop" hidden>
+  <span>Drag the handles to crop. Drag inside the frame to move it.</span>
+  <button id="cropApply" class="primary">Apply crop</button>
+  <button id="cropReset">Reset to full image</button>
+  <button id="cropCancel">Cancel</button>
+</div>
+<div id="textbar" class="ctx" role="group" aria-label="Text in image" hidden>
+  <span id="ocrStatus" role="status">Reading text…</span>
+  <button id="txtCopy" disabled>Copy</button>
+  <button id="txtSearch" disabled>Search Google</button>
+  <button id="txtAll" disabled>Copy all text</button>
+</div>
 <main id="scroller">
 <div id="toast" hidden></div>
 <div id="sr" class="sr-only" role="status"></div>
-<div id="stage"><canvas id="view" role="img" aria-label="Screenshot being edited. Drawing tools need a mouse or touch; saving, copying and printing work from the keyboard."></canvas></div></main>
+<div id="stage">
+  <canvas id="view" role="img" aria-label="Screenshot being edited. Drawing tools need a mouse or touch; saving, copying, printing and text selection work from the keyboard."></canvas>
+  <div id="textlayer" hidden></div>
+</div></main>
 <img id="printimg" alt="">
+<script src="vendor/tesseract/tesseract.min.js"></script>
 <script type="module" src="editor.js"></script>
 </body></html>
