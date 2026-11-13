@@ -1,6 +1,6 @@
-# Privacy policy — Clean Capture
+# Privacy policy — CleanCapture
 
-Clean Capture does not collect, transmit, sell or share any data.
+CleanCapture does not collect, transmit, sell or share any data.
 
 - It makes no network requests to any server. Its content security policy sets `connect-src 'self'`, so it can only load files that ship inside the extension itself.
 - Text recognition ("Select text") runs entirely on your device using a bundled copy of Tesseract.

@@ -11,7 +11,7 @@ const CROP = Q.has('crop') ? (([x, y, w, h, vw, vh]) => ({ x, y, w, h, vw, vh })
 const canCrop = 'MediaStreamTrackProcessor' in window && 'MediaStreamTrackGenerator' in window;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 if (SHOT) {
-  $('#heading').textContent = 'Screenshot a window or screen'; document.title = 'Clean Capture – Screenshot';
+  $('#heading').textContent = 'Screenshot a window or screen'; document.title = 'CleanCapture – Screenshot';
   $('#lead').textContent = 'Choose a window, an app or your whole screen. After a 3-second countdown it is captured and opened in the editor.';
   $('#recopts').hidden = true; $('#start').textContent = 'Choose what to capture';
   $('#startnote').textContent = 'The countdown gives you time to bring the right window to the front.';
@@ -88,7 +88,7 @@ const show = id => { for (const s of ['setup', 'live', 'done']) $('#' + s).hidde
 const say = (t, error = true) => { $('#msg').textContent = t || ''; $('#msg').classList.toggle('error', !!t && error); };
 const elapsed = () => activeMs + (resumedAt ? performance.now() - resumedAt : 0);
 const fmt = ms => { const s = Math.floor(ms / 1000), z = n => String(n).padStart(2, '0'); return (s >= 3600 ? z(Math.floor(s / 3600)) + ':' : '') + z(Math.floor(s / 60) % 60) + ':' + z(s % 60); };
-const paint = () => { $('#time').textContent = fmt(elapsed()); document.title = (rec?.state === 'paused' ? '⏸ ' : '● ') + fmt(elapsed()) + ' – Clean Capture'; };
+const paint = () => { $('#time').textContent = fmt(elapsed()); document.title = (rec?.state === 'paused' ? '⏸ ' : '● ') + fmt(elapsed()) + ' – CleanCapture'; };
 
 function cleanup() {
   clearInterval(tick); tick = null;
@@ -171,7 +171,7 @@ function stop() {
 async function finish() {
   const type = rec.mimeType || $('#format').value;
   cleanup(); rec = null;
-  document.title = 'Clean Capture – Screen recorder';
+  document.title = 'CleanCapture – Screen recorder';
   blob = new Blob(chunks, { type: type.split(';')[0] });
   chunks = [];
   if (!blob.size) { show('setup'); return say('The recording was empty.'); }

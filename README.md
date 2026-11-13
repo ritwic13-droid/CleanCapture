@@ -1,4 +1,4 @@
-# Clean Capture
+# CleanCapture
 
 Screenshots (full page, picked element, selected area, this tab, another window or screen) with an annotation editor, and screen recording (picked element, selected area, tab, window or screen).
 Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen) to WebM or MP4. No ads, no tracking, no network access. See [PRIVACY.md](PRIVACY.md).
@@ -16,7 +16,7 @@ Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen)
    Permanent installs need the zip signed through addons.mozilla.org.
 
 **Safari (macOS / iOS / iPadOS)** — needs a Mac with Xcode:
-`xcrun safari-web-extension-converter dist/chrome --app-name "Clean Capture"`
+`xcrun safari-web-extension-converter dist/chrome --app-name "CleanCapture"`
 
 ## Use
 Click the toolbar icon and pick a mode, or use Alt+Shift+F (full page), E (pick element), A (selected area), V (this tab).

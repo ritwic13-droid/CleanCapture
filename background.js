@@ -130,7 +130,7 @@ async function runElement(tab, prepared = false) {
 }
 
 function fail(tab, e) {
-  console.warn('Clean Capture:', e);
+  console.warn('CleanCapture:', e);
   badge(tab.id, 'ERR', '#dc2626');
   setTimeout(() => badge(tab.id, ''), 4000);
 }

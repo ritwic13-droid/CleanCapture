@@ -11,7 +11,7 @@ python3 - <<'PY'
 import json
 p = 'dist/firefox/manifest.json'
 m = json.load(open(p))
-m['name'] = 'Clean Capture – Full Page Screenshot'   # AMO limits names to 45 characters
+m['name'] = 'CleanCapture – Full Page Screenshot'   # AMO limits names to 45 characters
 m['background'] = {'scripts': ['background.js'], 'type': 'module'}
 m['browser_specific_settings'] = {'gecko': {
     'id': 'clean-capture@ritwic13-droid.github.io',

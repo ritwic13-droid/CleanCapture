@@ -1,12 +1,12 @@
 # Store listing copy (Chrome Web Store / Edge Add-ons / Firefox AMO)
 
-**Name:** Clean Capture – Full Page & Scrollable Area Screenshot
+**Name:** CleanCapture – Full Page & Scrollable Area Screenshot
 **Category:** Tools (Productivity)
 **Summary (132 chars max):**
 Full-page and scrollable-area screenshots with an editor, plus screen recording. PNG/JPEG/PDF. No ads, no tracking.
 
 **Description:**
-Clean Capture takes screenshots and nothing else.
+CleanCapture takes screenshots and nothing else.
 
 • Full page — scrolls and stitches the whole page
 • Pick element — hover to highlight any part of the page (a card, table, chat or scrolling panel) and click to capture all of it

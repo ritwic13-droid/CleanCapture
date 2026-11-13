@@ -6,13 +6,13 @@ Upload `dist/clean-capture-firefox.zip` (built by `./build.sh`).
 **Compatibility:** tick Firefox (desktop) only. Leave Firefox for Android unticked.
 **Does your add-on use minified, concatenated or machine-generated code?** Only the unmodified third-party library in `vendor/tesseract/` (published npm builds). Our own code is not minified. If asked for sources, link the npm packages listed in vendor/tesseract/README.md.
 
-**Name:** Clean Capture – Full Page Screenshot
+**Name:** CleanCapture – Full Page Screenshot
 **Add-on URL slug:** clean-capture
 **Summary (250 chars max):**
 Full-page, scrollable-area and region screenshots with a built-in annotation editor. Export PNG, JPEG or PDF. No ads, no tracking, no network access.
 
 **Description:**
-Clean Capture takes screenshots and nothing else.
+CleanCapture takes screenshots and nothing else.
 
 <b>Five ways to take a screenshot</b>
 <ul>

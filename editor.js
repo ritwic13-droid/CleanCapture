@@ -126,7 +126,7 @@ async function load() {
   const cap = await getCapture(new URLSearchParams(location.search).get('id'));
   if (!cap) { stage.remove(); toast('This capture is no longer stored. Take a new one.', 60000); return; }
   title = cap.title;
-  document.title = cap.title + ' – Clean Capture';
+  document.title = cap.title + ' – CleanCapture';
   const bmps = await Promise.all(cap.frames.map(f => createImageBitmap(f.blob)));
   const s = bmps[0].width / cap.frames[0].vw;
   const W0 = cap.w * s, H0 = cap.h * s;

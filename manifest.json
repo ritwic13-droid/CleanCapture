@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Clean Capture – Full Page & Scrollable Area Screenshot",
-  "short_name": "Clean Capture",
-  "version": "1.4.0",
+  "name": "CleanCapture – Full Page & Scrollable Area Screenshot",
+  "short_name": "CleanCapture",
+  "version": "1.4.1",
   "description": "Full-page and scrollable-area screenshots with an editor, plus screen recording. PNG/JPEG/PDF. No ads, no tracking.",
   "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
-  "action": { "default_popup": "popup.html", "default_title": "Clean Capture", "default_icon": { "16": "icons/16.png", "32": "icons/32.png" } },
+  "action": { "default_popup": "popup.html", "default_title": "CleanCapture", "default_icon": { "16": "icons/16.png", "32": "icons/32.png" } },
   "background": { "service_worker": "background.js", "type": "module" },
   "permissions": ["activeTab", "scripting", "clipboardWrite"],
   "content_security_policy": {
