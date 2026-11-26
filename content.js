@@ -91,7 +91,8 @@
       done();
       if (!rect || rect.w < 5 || rect.h < 5) return;
       await settle(60);
-      chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, rect: { ...rect, vw: innerWidth, vh: innerHeight } });
+      if (purpose === 'record') { REC.el = null; recPrepare(rect); }
+      chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, dpr: devicePixelRatio, rect: { ...rect, vw: innerWidth, vh: innerHeight } });
     });
   }
 
@@ -141,8 +142,9 @@
         const b = cur.getBoundingClientRect();
         const x = Math.max(0, b.left), y = Math.max(0, b.top), w = Math.min(innerWidth, b.right) - x, h = Math.min(innerHeight, b.bottom) - y;
         if (w < 8 || h < 8) return;
+        REC.el = cur; recPrepare({ x, y, w, h });       // the frame follows this element if the page scrolls
         await settle(60);
-        chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, rect: { x, y, w, h, vw: innerWidth, vh: innerHeight } });
+        chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, dpr: devicePixelRatio, rect: { x, y, w, h, vw: innerWidth, vh: innerHeight } });
         return;
       }
       S.el = cur;
@@ -169,6 +171,198 @@
     const x0 = Math.max(0, r.left), y0 = Math.max(0, r.top), x1 = Math.min(innerWidth, r.right), y1 = Math.min(innerHeight, r.bottom);
     return { sx: x0, sy: y0, sw: Math.max(1, x1 - x0), sh: Math.max(1, y1 - y0), offX: x0 - r.left, offY: y0 - r.top,
       totalW: Math.max(1, r.width), totalH: Math.max(1, r.height), vw: innerWidth, vh: innerHeight, fixed: fixedAncestor(S.el) };
+  }
+
+
+  /* ---------- in-page recording overlay (see docs/RECORDING_PLAN.md §5) ----------
+     The red frame is drawn just outside the recorded region and the control bar sits
+     outside it too, so neither ends up in the video. Commands go straight to the
+     offscreen recorder. */
+  const REC = { el: null, base: null, elBase: null, rect: null, host: null, ui: null, raf: 0, timer: 0,
+    activeMs: 0, resumedAt: 0, paused: false, editing: false, wasPaused: false, live: false, cancel: null };
+  const toRecorder = (t, extra = {}) => chrome.runtime.sendMessage({ target: 'offscreen', t, ...extra }).catch(() => {});
+  const recElapsed = () => REC.activeMs + (REC.resumedAt ? performance.now() - REC.resumedAt : 0);
+  const fmt = ms => { const s = Math.floor(ms / 1000), z = n => String(n).padStart(2, '0'); return (s >= 3600 ? Math.floor(s / 3600) + ':' : '') + z(Math.floor(s / 60) % 60) + ':' + z(s % 60); };
+  const sendRegion = () => toRecorder('region', { rect: { ...REC.rect, vw: innerWidth, vh: innerHeight, sx: scrollX, sy: scrollY }, vw: innerWidth });
+
+  function recPrepare(rect) {
+    REC.rect = { x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+    REC.base = { ...REC.rect };
+    REC.elBase = REC.el ? REC.el.getBoundingClientRect() : null;
+  }
+
+  function recBuild() {
+    const host = document.createElement('div');
+    host.style.cssText = `all:initial;position:fixed;inset:0;z-index:${Z};pointer-events:none`;
+    const root = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style');
+    style.textContent = `
+      *{box-sizing:border-box}
+      .frame{position:fixed;border:3px solid #ef4444;border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.3);pointer-events:none}
+      .frame.edit{pointer-events:auto;cursor:move;border-style:dashed}
+      .frame i{display:none;position:absolute;width:14px;height:14px;background:#fff;border:2px solid #ef4444;border-radius:3px;pointer-events:auto}
+      .frame.edit i{display:block}
+      .count{position:fixed;display:flex;flex-direction:column;align-items:center;gap:10px;transform:translate(-50%,-50%);pointer-events:none}
+      .count b{display:block;width:104px;height:104px;border-radius:50%;background:rgba(17,24,39,.88);color:#fff;font:700 52px/104px system-ui,sans-serif;text-align:center}
+      .count span{color:#fff;background:rgba(17,24,39,.88);font:500 13px/1 system-ui,sans-serif;padding:7px 12px;border-radius:999px}
+      .bar{position:fixed;display:flex;align-items:center;gap:6px;padding:5px 5px 5px 12px;background:#111827;color:#f9fafb;border-radius:999px;font:600 13px/1 system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.3);pointer-events:auto;white-space:nowrap}
+      .bar[hidden],.count[hidden]{display:none}
+      .dot{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:blink 1.2s infinite}
+      .dot.paused{animation:none;background:#9ca3af;border-radius:2px}
+      @keyframes blink{50%{opacity:.2}}
+      @media (prefers-reduced-motion: reduce){.dot{animation:none}}
+      .time{font-variant-numeric:tabular-nums;min-width:44px;margin-right:2px}
+      button{all:unset;font:600 12px/1 system-ui,sans-serif;color:#f9fafb;background:#374151;padding:8px 12px;border-radius:999px;cursor:pointer}
+      button:hover{background:#4b5563}
+      button:focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
+      button[disabled]{opacity:.5;cursor:default}
+      button.stop{background:#dc2626}
+      button.stop:hover{background:#b91c1c}
+      .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}`;
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+    const frame = el('div', 'frame');
+    for (const h of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) { const i = el('i'); i.dataset.h = h; frame.appendChild(i); }
+    const count = el('div', 'count'); const num = el('b', '', '3'); count.append(num, el('span', '', 'Recording starts… Esc to cancel'));
+    const bar = el('div', 'bar'); bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Recording controls'); bar.hidden = true;
+    const dot = el('span', 'dot'); dot.setAttribute('aria-hidden', 'true');
+    const time = el('span', 'time', '00:00'); time.setAttribute('aria-label', 'Recorded time');
+    const pause = el('button', '', 'Pause'), edit = el('button', '', 'Edit frame'), stop = el('button', 'stop', 'Stop');
+    bar.append(dot, time, pause, edit, stop);
+    const sr = el('div', 'sr'); sr.setAttribute('role', 'status');
+    root.append(style, frame, count, bar, sr);
+    document.documentElement.appendChild(host);
+    REC.host = host;
+    REC.ui = { frame, count, num, bar, dot, time, pause, edit, stop, sr };
+    pause.addEventListener('click', togglePause);
+    edit.addEventListener('click', toggleEdit);
+    stop.addEventListener('click', () => {
+      stop.disabled = pause.disabled = edit.disabled = true; stop.textContent = 'Saving…';
+      if (REC.editing) toggleEdit();
+      REC.activeMs = recElapsed(); REC.resumedAt = 0;
+      toRecorder('stop');
+    });
+    frame.addEventListener('pointerdown', editDrag);
+    addEventListener('scroll', follow, true);
+    addEventListener('resize', follow);
+  }
+
+  // Keep the frame and bar positioned; for a picked element, follow it when the page scrolls.
+  function place() {
+    const { frame, count, bar } = REC.ui, r = REC.rect;
+    Object.assign(frame.style, { left: r.x - 6 + 'px', top: r.y - 6 + 'px', width: r.w + 12 + 'px', height: r.h + 12 + 'px' });
+    const hp = { nw: [0, 0], n: [.5, 0], ne: [1, 0], e: [1, .5], se: [1, 1], s: [.5, 1], sw: [0, 1], w: [0, .5] };
+    for (const i of frame.children) { const [fx, fy] = hp[i.dataset.h]; Object.assign(i.style, { left: `calc(${fx * 100}% - 8.5px)`, top: `calc(${fy * 100}% - 8.5px)`, cursor: (i.dataset.h.length === 2 ? (i.dataset.h === 'nw' || i.dataset.h === 'se' ? 'nwse' : 'nesw') : 'ns'.includes(i.dataset.h) ? 'ns' : 'ew') + '-resize' }); }
+    Object.assign(count.style, { left: Math.min(innerWidth - 60, Math.max(60, r.x + r.w / 2)) + 'px', top: Math.min(innerHeight - 80, Math.max(80, r.y + r.h / 2)) + 'px' });
+    if (bar.hidden) return;
+    const bw = bar.offsetWidth, bh = bar.offsetHeight;
+    // Keep the bar (and its shadow) at least 16px clear of the recorded region so it never shows in the video.
+    let top = r.y - 16 - bh;                                      // above the frame's top-right corner
+    if (top < 4) top = r.y + r.h + 16;                            // no room: below the frame
+    if (top + bh > innerHeight - 4) top = Math.max(4, r.y + 6);   // no room at all: inside (will be visible in the video)
+    const left = Math.min(innerWidth - bw - 4, Math.max(4, r.x + r.w + 6 - bw));
+    Object.assign(bar.style, { left: left + 'px', top: top + 'px' });
+  }
+  function follow() {
+    if (REC.raf || !REC.ui) return;
+    REC.raf = requestAnimationFrame(() => {
+      REC.raf = 0;
+      if (REC.el && REC.elBase && !REC.editing && document.contains(REC.el)) {
+        const b = REC.el.getBoundingClientRect();
+        REC.rect = { ...REC.base, x: REC.base.x + b.left - REC.elBase.left, y: REC.base.y + b.top - REC.elBase.top };
+      }
+      place();
+      if (REC.live) sendRegion();
+    });
+  }
+
+  function announce(t) { REC.ui.sr.textContent = t; }
+  function setPaused(p) {
+    REC.paused = p;
+    if (p) { REC.activeMs = recElapsed(); REC.resumedAt = 0; toRecorder('pause'); }
+    else { REC.resumedAt = performance.now(); toRecorder('resume'); }
+    REC.ui.dot.classList.toggle('paused', p);
+    REC.ui.pause.textContent = p ? 'Resume' : 'Pause';
+  }
+  function togglePause() {
+    if (REC.editing) return;
+    setPaused(!REC.paused);
+    announce(REC.paused ? 'Recording paused' : 'Recording resumed');
+  }
+  function toggleEdit() {
+    const { frame, edit, pause } = REC.ui;
+    if (!REC.editing) {
+      REC.wasPaused = REC.paused;
+      if (!REC.paused) setPaused(true);
+      REC.editing = true; frame.classList.add('edit'); edit.textContent = 'Done'; pause.disabled = true;
+      announce('Recording paused. Drag the frame or its handles, then press Done.');
+    } else {
+      REC.editing = false; frame.classList.remove('edit'); edit.textContent = 'Edit frame'; pause.disabled = false;
+      REC.base = { ...REC.rect };
+      if (REC.el) REC.elBase = REC.el.getBoundingClientRect();
+      sendRegion();
+      if (!REC.wasPaused) setPaused(false);
+      announce(REC.wasPaused ? 'Frame updated' : 'Frame updated, recording resumed');
+    }
+    place();
+  }
+  function editDrag(e) {
+    if (!REC.editing) return;
+    e.preventDefault(); e.stopPropagation();
+    const mode = e.target.dataset?.h || 'move', start = { x: e.clientX, y: e.clientY }, box = { ...REC.rect };
+    const tgt = e.currentTarget; tgt.setPointerCapture(e.pointerId);
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const mv = ev => {
+      const dx = ev.clientX - start.x, dy = ev.clientY - start.y, W = innerWidth, H = innerHeight;
+      if (mode === 'move') REC.rect = { ...box, x: clamp(box.x + dx, 0, W - box.w), y: clamp(box.y + dy, 0, H - box.h) };
+      else {
+        let x0 = box.x, y0 = box.y, x1 = box.x + box.w, y1 = box.y + box.h;
+        if (mode.includes('w')) x0 = clamp(x0 + dx, 0, x1 - 40);
+        if (mode.includes('e')) x1 = clamp(x1 + dx, x0 + 40, W);
+        if (mode.includes('n')) y0 = clamp(y0 + dy, 0, y1 - 40);
+        if (mode.includes('s')) y1 = clamp(y1 + dy, y0 + 40, H);
+        REC.rect = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+      }
+      place();
+    };
+    const up = () => { tgt.removeEventListener('pointermove', mv); tgt.removeEventListener('pointerup', up); tgt.removeEventListener('pointercancel', up); };
+    tgt.addEventListener('pointermove', mv); tgt.addEventListener('pointerup', up); tgt.addEventListener('pointercancel', up);
+  }
+
+  function recEnd() {
+    clearInterval(REC.timer); clearInterval(REC.ping);
+    removeEventListener('scroll', follow, true); removeEventListener('resize', follow);
+    removeEventListener('keydown', REC.cancel, true);
+    REC.host?.remove();
+    Object.assign(REC, { host: null, ui: null, live: false, editing: false, paused: false, el: null, activeMs: 0, resumedAt: 0 });
+  }
+
+  // 3-2-1 over the region. Resolves with the current region, or null if cancelled (Esc).
+  function recCountdown() {
+    if (!REC.rect) return Promise.resolve(null);
+    recBuild(); place();
+    const { count, num } = REC.ui;
+    return new Promise(res => {
+      let n = 3, iv = 0;
+      REC.cancel = e => { if (e.key !== 'Escape') return; e.preventDefault(); e.stopPropagation(); clearInterval(iv); recEnd(); res(null); };
+      addEventListener('keydown', REC.cancel, true);
+      iv = setInterval(async () => {
+        if (--n > 0) { num.textContent = n; return; }
+        clearInterval(iv);
+        removeEventListener('keydown', REC.cancel, true);
+        count.hidden = true;
+        await settle(120);                                  // make sure the number is gone from the screen first
+        res({ ...REC.rect, vw: innerWidth, vh: innerHeight, sx: scrollX, sy: scrollY });
+      }, 1000);
+    });
+  }
+  function recLive() {
+    if (!REC.ui) return;
+    REC.live = true; REC.resumedAt = performance.now();
+    REC.ui.bar.hidden = false; place();
+    REC.ui.stop.focus({ preventScroll: true });
+    announce('Recording started');
+    REC.timer = setInterval(() => { if (REC.ui) REC.ui.time.textContent = fmt(recElapsed()); }, 250);
+    REC.ping = setInterval(() => toRecorder('ping'), 10000);   // keeps Firefox's background page awake
   }
 
   const handlers = {
@@ -229,6 +423,9 @@
     async elScroll({ y }) { S.el.scrollTop = y; await settle(); return elInfo(); },
     async elTail() { S.el.scrollIntoView({ block: 'end' }); await settle(); return elInfo(); },
     restore() { restore(); return true; },
+    async recCountdown() { return recCountdown(); },
+    recLive() { recLive(); return true; },
+    recEnd() { recEnd(); return true; },
     pickArea({ purpose }) { pickArea(purpose); return true; },
     pickElement({ purpose }) { pickElement(purpose); return true; }
   };

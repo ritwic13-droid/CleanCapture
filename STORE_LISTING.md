@@ -20,7 +20,7 @@ New screenshots are copied to the clipboard automatically.
 Export: PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 Shortcuts: Alt+Shift+F / E / A / V.
 
-Screen recording: switch the popup to "Record video" and record a picked element, a selected area, a browser tab, or a window or the whole screen. WebM or MP4, optional tab/system audio and microphone, pause and resume. (Element and area recording need Chrome or Edge.)
+Screen recording: switch the popup to "Record video". Pick an element or drag an area and it records right there on the page — no share dialog — with a 3-second countdown, a red frame, a timer and pause / edit frame / stop controls. Or record a browser tab, a window or the whole screen. When you stop, a video editor opens: trim, cut out parts, crop, mute, then save.
 
 Privacy: no ads, no analytics, no accounts, no network access at all. Screenshots never leave your device.
 
@@ -30,6 +30,8 @@ Privacy: no ads, no analytics, no accounts, no network access at all. Screenshot
 - `activeTab`: capture the tab the user explicitly invokes the extension on.
 - `scripting`: inject the capture helper (scrolling, area/element picker) into that tab after the user's click.
 - `clipboardWrite`: copy the new screenshot to the clipboard automatically when the editor opens.
+- `tabCapture`: record the current tab after the user picks an element or area to record from the extension's popup, without a separate share dialog. Only that tab, only while recording; the video stays on the device.
+- `offscreen`: hosts the recording of the current tab in a hidden extension page, because the background service worker cannot use media APIs. Nothing is shown or sent anywhere.
 - Host permissions: none. Remote code: none. Bundled library: Tesseract.js (Apache-2.0) for offline text recognition, see vendor/tesseract/README.md.
 
 **Data usage form:** collects no user data; tick all three compliance certifications.

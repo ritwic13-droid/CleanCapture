@@ -1,0 +1,51 @@
+/* Same tokens as the screenshot editor: Tailwind gray scale, blue-600 accent, red for cuts. */
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; background: #1f2937; color: #f9fafb; font: 13px/1.4 system-ui, sans-serif; }
+#bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 8px 12px; background: #111827; border-bottom: 1px solid #374151; }
+h1 { font-size: 15px; font-weight: 600; margin: 0 8px 0 0; }
+.group { display: flex; gap: 4px; align-items: center; }
+.spacer { flex: 1; }
+button { height: 32px; min-width: 32px; padding: 0 12px; border: 1px solid #4b5563; border-radius: 6px; background: #1f2937; color: inherit; font: inherit; font-weight: 500; cursor: pointer; transition: background-color .15s; }
+button:hover { background: #374151; }
+button:focus-visible, .seg:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+button[aria-pressed=true] { background: #2563eb; border-color: #2563eb; }
+button.primary { background: #2563eb; border-color: #2563eb; font-weight: 600; }
+button.primary:hover { background: #1d4ed8; }
+button:disabled { opacity: .4; cursor: default; }
+button[hidden] { display: none; }
+button.round { width: 40px; height: 40px; border-radius: 50%; font-size: 15px; padding: 0; }
+.ctx { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; background: #0f172a; border-bottom: 1px solid #374151; }
+.ctx[hidden] { display: none; }
+.ctx span { margin-right: 8px; color: #e5e7eb; }
+main { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 16px 24px 24px; gap: 16px; }
+#stage { position: relative; flex: 1; min-height: 160px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+video { max-width: 100%; max-height: 100%; background: #000; border-radius: 4px; box-shadow: 0 10px 15px -3px rgba(0,0,0,.4); }
+#cropview { position: absolute; pointer-events: none; outline: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(17,24,39,.75); }
+#cropbox { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,.55); cursor: move; touch-action: none; }
+#cropbox i { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #2563eb; border-radius: 3px; }
+#cropview[hidden], #cropbox[hidden] { display: none; }
+#controls { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; align-items: center; gap: 12px; }
+#time { font-variant-numeric: tabular-nums; color: #e5e7eb; }
+#track { position: relative; height: 64px; border-radius: 8px; background: #111827; overflow: hidden; cursor: pointer; touch-action: none; }
+#thumbs { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .35; }
+.seg { position: absolute; top: 0; bottom: 0; border: 2px solid #60a5fa; border-radius: 6px; background: rgba(37,99,235,.18); }
+.seg canvas { display: none; }
+.seg.sel { border-color: #fbbf24; background: rgba(251,191,36,.18); }
+.seg .h { position: absolute; top: 0; bottom: 0; width: 12px; background: #60a5fa; cursor: ew-resize; }
+.seg.sel .h { background: #fbbf24; }
+.seg .h.l { left: -2px; border-radius: 5px 0 0 5px; }
+.seg .h.r { right: -2px; border-radius: 0 5px 5px 0; }
+.seg .h::after { content: ''; position: absolute; left: 5px; top: 22px; bottom: 22px; width: 2px; background: #111827; border-radius: 1px; }
+#head { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #ef4444; pointer-events: none; }
+#head::before { content: ''; position: absolute; top: 0; left: -5px; border: 6px solid transparent; border-top-color: #ef4444; }
+.note { color: #9ca3af; margin: 0; }
+#progress { height: 6px; border-radius: 3px; background: #374151; overflow: hidden; }
+#progress[hidden] { display: none; }
+#progress div { height: 100%; width: 0; background: #2563eb; transition: width .2s; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #111827; border: 1px solid #4b5563; padding: 8px 16px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,.4); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { button, #progress div { transition: none; } }
+.gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(17,24,39,.85) 0 6px, rgba(239,68,68,.35) 6px 8px); }

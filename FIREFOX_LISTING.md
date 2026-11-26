@@ -33,7 +33,7 @@ PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 Alt+Shift+F (full page), E (pick element), A (selected area), V (this tab).
 
 <b>Screen recording</b>
-Switch the popup to "Record video" and record a picked element, a selected area, a browser tab, or a window or the whole screen. WebM or MP4, optional audio and microphone, pause and resume. (Element and area recording are not available in Firefox.)
+Switch the popup to "Record video". Pick an element or drag an area and it records right there on the page, with a countdown, a red frame, a timer and pause / edit frame / stop controls (no sound for element and area recordings in Firefox). Or record a browser tab, a window or the whole screen. When you stop, a video editor opens: trim, cut out parts, crop, mute, then save.
 
 <b>Private by design</b>
 No ads, no analytics, no accounts and no network access at all. Screenshots never leave your device. The source is open: https://github.com/ritwic13-droid/CleanCapture

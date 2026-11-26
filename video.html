@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>CleanCapture – Edit recording</title>
+<link rel="icon" href="icons/32.png"><link rel="stylesheet" href="video.css"></head>
+<body>
+<header id="bar">
+  <h1>Edit recording</h1>
+  <div class="group" role="group" aria-label="History">
+    <button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>↶</button>
+    <button id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled>↷</button>
+  </div>
+  <div class="group" role="group" aria-label="Edit">
+    <button id="crop" aria-pressed="false" title="Crop the video">Crop</button>
+    <button id="mute" aria-pressed="false" title="Remove the sound" hidden>Mute sound</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="group" role="group" aria-label="Save">
+    <button id="orig" title="Save the recording exactly as it was recorded">Save original</button>
+    <button id="save" class="primary" title="Save with your edits">Save video</button>
+  </div>
+</header>
+<div id="cropbar" class="ctx" role="group" aria-label="Crop" hidden>
+  <span>Drag the handles to crop. Drag inside the frame to move it.</span>
+  <button id="cropApply" class="primary">Apply crop</button>
+  <button id="cropReset">Reset</button>
+  <button id="cropCancel">Cancel</button>
+</div>
+<main>
+  <div id="stage">
+    <video id="v" playsinline preload="auto" aria-label="Recording preview"></video>
+    <div id="cropview" hidden></div>
+    <div id="cropbox" hidden></div>
+  </div>
+  <section id="controls" aria-label="Playback and timeline">
+    <div class="row">
+      <button id="play" class="round" aria-label="Play" title="Play / pause (Space)">▶</button>
+      <span id="time" aria-live="off">0:00.0 / 0:00.0</span>
+      <div class="spacer"></div>
+      <button id="split" title="Split at the playhead (S)">Split</button>
+      <button id="del" title="Delete the selected part (Delete)" disabled>Delete part</button>
+    </div>
+    <div id="track" role="group" aria-label="Timeline. Tab to a part and press Enter to select it. Left and right arrows move the playhead.">
+      <canvas id="thumbs" aria-hidden="true"></canvas>
+      <div id="segs"></div>
+      <div id="head" aria-hidden="true"></div>
+    </div>
+    <p id="info" class="note">Drag the ends of a part to trim it. Split at the playhead, then select a part and delete it to cut it out.</p>
+    <div id="progress" hidden><div></div></div>
+  </section>
+  <div id="toast" hidden></div>
+  <div id="sr" class="sr-only" role="status"></div>
+</main>
+<script type="module" src="video.js"></script>
+</body></html>

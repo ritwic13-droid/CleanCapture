@@ -13,8 +13,8 @@ try { saved = localStorage.getItem('kind') || 'shot'; } catch {}
 document.querySelector(`input[name=kind][value=${saved === 'rec' ? 'rec' : 'shot'}]`).checked = true;
 setKind(saved === 'rec' ? 'rec' : 'shot');
 
-// Recording just part of a page needs frame-level cropping, which only Chromium browsers offer.
-if (!('MediaStreamTrackProcessor' in window && 'MediaStreamTrackGenerator' in window)) {
+// Recording part of the current page: tabCapture in Chrome/Edge, tabs.captureTab in Firefox.
+if (!((chrome.tabCapture && chrome.offscreen && 'MediaStreamTrackProcessor' in window) || chrome.tabs.captureTab)) {
   for (const b of document.querySelectorAll('.needs-crop')) b.hidden = true;
   $('#nocrop').hidden = false;
 }

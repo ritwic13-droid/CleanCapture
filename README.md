@@ -1,6 +1,6 @@
 # CleanCapture
 
-Screenshots (full page, picked element, selected area, this tab, another window or screen) with an annotation editor, and screen recording (picked element, selected area, tab, window or screen).
+Screenshots (full page, picked element, selected area, this tab, another window or screen) with an annotation editor, and screen recording (picked element or selected area right on the page, or a tab, window or screen) with a video editor for trimming, cutting and cropping.
 Exports PNG, JPEG and PDF. Also records the screen (tab, window or whole screen) to WebM or MP4. No ads, no tracking, no network access. See [PRIVACY.md](PRIVACY.md).
 
 ## Install from source
@@ -23,3 +23,6 @@ Click the toolbar icon and pick a mode, or use Alt+Shift+F (full page), E (pick 
 
 ## Build store packages
 `./build.sh` writes `dist/clean-capture-chrome.zip` and `dist/clean-capture-firefox.zip`. Listing text is in [STORE_LISTING.md](STORE_LISTING.md) (Chrome) and [FIREFOX_LISTING.md](FIREFOX_LISTING.md) (Firefox).
+
+## Docs
+- [In-page recording plan and reference](docs/RECORDING_PLAN.md)

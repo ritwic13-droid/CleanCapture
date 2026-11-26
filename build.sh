@@ -3,7 +3,7 @@
 # and dist/clean-capture-firefox.zip (Firefox 140+).
 set -euo pipefail
 cd "$(dirname "$0")"
-FILES="manifest.json background.js content.js db.js editor.html editor.css editor.js popup.html popup.css popup.js recorder.html recorder.css recorder.js icons vendor"
+FILES="manifest.json background.js content.js db.js editor.html editor.css editor.js popup.html popup.css popup.js recorder.html recorder.css recorder.js offscreen.html offscreen.js video.html video.css video.js webm.js ffrec.js icons vendor"
 rm -rf dist && mkdir -p dist/chrome dist/firefox
 cp -r $FILES dist/chrome/
 cp -r $FILES dist/firefox/
@@ -12,6 +12,7 @@ import json
 p = 'dist/firefox/manifest.json'
 m = json.load(open(p))
 m['name'] = 'CleanCapture – Full Page Screenshot'   # AMO limits names to 45 characters
+m['permissions'] = [p for p in m['permissions'] if p not in ('tabCapture', 'offscreen')]   # Chrome-only APIs
 m['background'] = {'scripts': ['background.js'], 'type': 'module'}
 m['browser_specific_settings'] = {'gecko': {
     'id': 'clean-capture@ritwic13-droid.github.io',

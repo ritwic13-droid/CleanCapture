@@ -1,4 +1,5 @@
 import { putCapture } from './db.js';
+import { ffStart, ffCommand, ffRecording } from './ffrec.js';
 
 const MIN_GAP = 550;      // Chrome allows max 2 captureVisibleTab calls per second
 const MAX_FRAMES = 80;
@@ -161,16 +162,71 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
     return true;
   }
   if (msg.t === 'picked' && msg.purpose === 'record' && sender.tab) {
-    // Record just this region: hand the rectangle to the recorder page.
-    const r = msg.rect, q = new URLSearchParams({ crop: [r.x, r.y, r.w, r.h, r.vw, r.vh].map(n => Math.round(n)).join(','), title: sender.tab.title || 'this tab' });
-    chrome.tabs.create({ url: chrome.runtime.getURL('recorder.html?' + q), index: sender.tab.index + 1 });
+    recordInPage(sender.tab, msg).catch(e => { fail(sender.tab, e); send(sender.tab.id, { t: 'recEnd', error: e.message }).catch(() => {}); });
     return;
   }
+  if (msg.target === 'offscreen' && !chrome.offscreen) { ffCommand(msg.t, msg); return; }   // Firefox: recorder lives here
+  if (msg.t === 'recSaved') { recSaved(msg); return; }
+  if (msg.t === 'recPing') return;
   if (msg.t === 'picked' && sender.tab) {
     const run = msg.mode === 'area' ? runArea(sender.tab, msg.rect) : runElement(sender.tab);
     run.catch(e => fail(sender.tab, e));
   }
 });
+
+// The finished recording is stored; close the overlay and open the video editor next to the page.
+function recSaved(msg) {
+  recTabId = null; badge(msg.tabId, '');
+  if (msg.tabId != null) send(msg.tabId, { t: 'recEnd' }).catch(() => {});
+  chrome.offscreen?.closeDocument().catch(() => {});
+  if (msg.id) chrome.tabs.get(msg.tabId).catch(() => null).then(tab => chrome.tabs.create({
+    url: chrome.runtime.getURL('video.html?id=' + msg.id), ...(tab ? { index: tab.index + 1, windowId: tab.windowId } : {})
+  }));
+}
+
+/* ---------- recording a picked element or area of this tab (Chrome) ----------
+   No share dialog: tabCapture records the tab the user invoked the extension on.
+   The recording itself runs in offscreen.html; the overlay in the page sends its
+   pause / resume / frame / stop commands straight to it. See docs/RECORDING_PLAN.md. */
+let recTabId = null;
+async function ensureOffscreen() {
+  const has = await chrome.runtime.getContexts?.({ contextTypes: ['OFFSCREEN_DOCUMENT'] }).then(c => c.length > 0).catch(() => false);
+  if (has) return;
+  await chrome.offscreen.createDocument({ url: 'offscreen.html', reasons: ['USER_MEDIA'], justification: 'Record the current tab after the user picks an area or element to record.' });
+}
+const FIREFOX = !chrome.offscreen && !!chrome.tabs.captureTab;
+async function recordInPage(tab, msg) {
+  if (!FIREFOX && (!chrome.tabCapture || !chrome.offscreen)) throw new Error('This browser cannot record part of a page.');
+  if (recTabId != null || ffRecording()) throw new Error('A recording is already running.');
+  recTabId = tab.id;
+  try {
+    const rect = await send(tab.id, { t: 'recCountdown' });        // overlay + 3-2-1; null if cancelled
+    if (!rect) { recTabId = null; return; }
+    if (FIREFOX) {
+      await ffStart({ tab, rect, dpr: msg.dpr, onSaved: recSaved });
+      badge(tab.id, 'REC', '#dc2626');
+      await send(tab.id, { t: 'recLive' });
+      return;
+    }
+    await ensureOffscreen();
+    const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
+    const r = await chrome.runtime.sendMessage({ target: 'offscreen', t: 'start', streamId, rect, vw: rect.vw, vh: rect.vh, dpr: msg.dpr || 1, tabId: tab.id, title: tab.title });
+    if (!r?.ok) throw new Error(r?.error || 'Could not start recording.');
+    badge(tab.id, 'REC', '#dc2626');
+    await send(tab.id, { t: 'recLive' });
+  } catch (e) {
+    recTabId = null;
+    chrome.offscreen?.closeDocument().catch(() => {});
+    throw e;
+  }
+}
+// Leaving or closing the page ends the recording; the editor opens with what was captured.
+const stopFor = tabId => {
+  if (tabId !== recTabId) return;
+  if (FIREFOX) ffCommand('stop'); else chrome.runtime.sendMessage({ target: 'offscreen', t: 'stop' }).catch(() => {});
+};
+chrome.tabs.onRemoved.addListener(stopFor);
+chrome.tabs.onUpdated.addListener((tabId, info) => { if (info.status === 'loading') stopFor(tabId); });
 
 chrome.commands.onCommand.addListener((cmd, tab) => {
   const mode = cmd.replace('capture-', '');
