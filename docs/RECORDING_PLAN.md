@@ -1,6 +1,6 @@
 # In-page recording: plan and reference
 
-Status: **1.6.0 done** (Chrome tested; Firefox needs a manual check) · Version: **1.6.0** · This document is the source of truth for the change. It is updated as the work lands (see "Progress").
+Status: **1.7.0 done** (Chrome tested; Firefox needs a manual check) · Version: **1.7.0** · This document is the source of truth for the change. It is updated as the work lands (see "Progress").
 
 ## 1. Problem
 
@@ -219,3 +219,74 @@ Chrome only lets an extension capture a tab after the user clicks its toolbar bu
 | T15 | ✅ Edit frame while ready: width 412 → 312; the recording came out 300 × 240 to match. |
 | T16 | ✅ Esc and Cancel while ready remove the overlay. Esc during the countdown returns to ready, and the recorder never started. |
 | T17 | ✅ Start → countdown → solid frame, Pause / Edit frame / Stop → Stop → editor. T1–T8, screenshot tests, accessibility scans (0 violations) and the Firefox linter (0 errors) re-run and passing. |
+
+## 13. Change for 1.7.0: Back, Discard, picker pointer, and a full experience review
+
+**Requests**
+1. A clickable **Back** during the countdown (Esc was the only way out).
+2. A **Discard** button while recording, with a confirm step.
+3. The pointer is hard to see on the darkened page when selecting an area: make it high-contrast.
+4. A full usability, accessibility and UX review of the whole experience, with fixes.
+
+### 13.1 Review findings
+
+Reviewed every step: popup → pickers → ready → countdown → recording → editor → save, plus the screenshot editor and recorder page. Severity: **H** blocks or loses work, **M** slows people down or excludes a group, **L** polish.
+
+| # | Where | Finding | Sev | Fix in 1.7.0 |
+|---|---|---|---|---|
+| R1 | Countdown | No clickable way back; keyboard-only (Esc) | H | Panel stays visible during the countdown with **Back** |
+| R2 | Recording | No way to throw a recording away; Stop always opens the editor | M | **Discard** → "Discard this recording?" **Discard** / **Keep recording**; recording pauses while asking |
+| R3 | Area picker | Default crosshair disappears on the darkened page | H | High-contrast crosshair cursor (white outline, dark core) **plus full-width guide lines** that follow the pointer, so it stays visible even on sites that block custom cursors |
+| R4 | Area picker | No size feedback while dragging | L | Live "W × H" label next to the selection |
+| R5 | Area picker | A click or tiny drag silently cancels the whole action | M | Picker stays open and says "Drag a bigger area" |
+| R6 | Area picker | Mouse only (WCAG 2.1.1) | M | **Enter** selects the whole visible page |
+| R7 | Edit frame | Frame can only be moved or resized with a mouse (WCAG 2.1.1) | M | While editing: arrow keys move the frame 10px, Shift + arrows resize it; Enter = Done; announced to screen readers |
+| R8 | Recording | Focus lands on **Stop**, so a stray Enter or Space ends the recording | M | Focus lands on **Pause** |
+| R9 | Popup | Opening the popup mid-recording only gives "A recording is already running" after clicking an option | M | Popup shows a **Recording in progress** banner with **Stop recording** |
+| R10 | Popup | Error on browser pages still says "Try Visible area" (renamed to "This tab") | L | Message updated |
+| R11 | Video editor | Trimming needs a mouse (WCAG 2.1.1) | M | With a part selected, **[** sets its start and **]** its end to the playhead |
+| R12 | Video editor | Closing the tab silently loses unsaved edits | M | Browser asks before leaving when there are unsaved edits |
+| R13 | Video editor | No way to delete a recording from local storage (privacy) | M | **Delete recording** with a confirm; removes it and closes the tab |
+| R14 | Video editor | Shortcuts aren't discoverable | L | Shortcut line under the timeline |
+
+Checked and fine as is: colour contrast of all text and controls (axe, light and dark), visible focus rings, screen-reader names and live announcements, reduced-motion handling, the element picker's keyboard support, and the recorder page flow.
+
+### 13.2 Tests
+
+| # | Test |
+|---|---|
+| T18 | Countdown shows the panel with Back; Back returns to ready with nothing recorded |
+| T19 | Discard → confirm → Keep recording resumes; Discard → confirm → Discard ends with no editor and nothing stored |
+| T20 | Area picker: custom cursor set, guide lines follow the pointer, size label shows W × H; a click keeps the picker open; Enter selects the visible page |
+| T21 | Edit frame with the keyboard: arrows move, Shift + arrows resize, Enter finishes |
+| T22 | Focus on Pause when recording starts |
+| T23 | Popup shows the recording banner and its Stop works |
+| T24 | Editor: [ and ] trim, leave-page warning only with unsaved edits, Delete recording removes it |
+| T25 | Full regression: T1–T17, screenshot tests, axe, Firefox lint |
+
+### 13.3 Progress
+
+- [x] Review written (§13.1) and plan updated
+- [x] Overlay: Back, Discard, keyboard frame editing, Pause focus (`content.js`)
+- [x] Recorders: discard without saving (`offscreen.js`, `ffrec.js`, `background.js`)
+- [x] Area picker: cursor, guide lines, size label, small-drag and Enter (`content.js`)
+- [x] Popup: recording banner, message fix (`popup.*`, `background.js`)
+- [x] Editor: [ ] trim, leave warning, Delete recording, shortcut line (`video.*`, `db.js`)
+- [x] Tests T18–T25
+- [x] Version 1.7.0, packages, docs, GitHub push
+- [ ] Manual check in Firefox (still open from T12)
+
+### 13.4 Results (Chromium, automated, same testing switch as §10)
+
+| # | Result |
+|---|---|
+| T18 | ✅ Countdown keeps the panel ("Starting in 2", **Back**, focused). Back → ready; recorder never started. |
+| T19 | ✅ Discard → "Discard this recording?" with **Keep recording** (focused) and **Discard**. Keep → recording continues. Discard → overlay gone, "Recording discarded", no editor tab, nothing stored, hidden recorder closed. |
+| T20 | ✅ High-contrast crosshair cursor set; both guide lines follow the pointer; size label "280 × 160" while dragging. A click keeps the picker open with "Drag a bigger area (at least 40 × 40)". Enter selects the whole visible page. |
+| T21 | ✅ While editing: 3 × → moved the frame 30px, 2 × Shift+↓ made it 20px taller, Enter finished. |
+| T22 | ✅ Focus lands on **Pause** when recording starts. |
+| T23 | ✅ Popup shows "Recording in progress" with **Stop recording**; it stopped the recording and the editor opened. Light and dark popup: 0 axe violations (the banner button's red was darkened to pass contrast in dark mode). |
+| T24 | ✅ `]` at 50 % → 1.7 s, `[` at 20 % → 1.0 s (of 3.3 s). Leaving with unsaved edits asks first. **Delete recording** asks, removes it from storage (1 → 0) and closes the tab. Shortcut line visible. |
+| T25 | ✅ T1–T17 re-run and passing (no overlay pixels in recorded frames), screenshot modes and screenshot editor (crop, text recognition, PNG), recorder page, axe 0 violations on every page, Firefox linter 0 errors. |
+
+Found and fixed during testing: the popup banner's button inherited the full-width capture-button styles; fixed before release.

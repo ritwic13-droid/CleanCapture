@@ -1,14 +1,14 @@
 // Video editor for recordings (see docs/RECORDING_PLAN.md §6).
 // Everything happens in this tab: trimming and cutting only change which parts are kept,
 // and "Save video" renders the kept parts (cropped, with or without sound) to a new WebM.
-import { getCapture } from './db.js';
+import { getCapture, deleteCapture } from './db.js';
 import { addWebmDuration } from './webm.js';
 
 const $ = s => document.querySelector(s);
 const v = $('#v'), track = $('#track'), segsEl = $('#segs'), head = $('#head'), stage = $('#stage');
 let cap = null, url = null, D = 0, title = 'Recording';
 let st = { segs: [], crop: null, muted: false };
-let history = [], hIndex = -1, sel = -1, cropBox = null, playing = false, busy = false;
+let history = [], hIndex = -1, sel = -1, cropBox = null, playing = false, busy = false, savedAt = 0;
 
 const fmt = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s.toFixed(1).padStart(4, '0')}`; };
 const keptLength = () => st.segs.reduce((a, [s, e]) => a + (e - s), 0);
@@ -105,6 +105,14 @@ function split() {
   const [a, b] = st.segs[i];
   st.segs.splice(i, 1, [a, t], [t, b]); sel = i + 1;
   commit(); toast('Split. Select a part and press Delete to cut it out.');
+}
+// Keyboard trimming (WCAG 2.1.1): set the selected part's start or end to the playhead.
+function trimTo(side) {
+  if (sel < 0) return toast('Select a part on the timeline first (click it, or Tab to it and press Enter).');
+  const i = sel, t = v.currentTime, s = st.segs[i], prev = st.segs[i - 1], next = st.segs[i + 1];
+  if (side === 'start') { if (t >= s[1] - 0.2 || (prev && t < prev[1])) return toast('Move the playhead inside this part, before its end.'); s[0] = t; }
+  else { if (t <= s[0] + 0.2 || (next && t > next[0])) return toast('Move the playhead inside this part, after its start.'); s[1] = t; }
+  commit(); toast(`Part ${i + 1} now ${fmt(s[0])} to ${fmt(s[1])}`);
 }
 function del() {
   if (sel < 0) return toast('Select a part on the timeline first.');
@@ -266,11 +274,11 @@ async function render() {
 }
 async function save() {
   if (busy) return;
-  if (!edited()) { download(cap.blob); return toast('Video saved'); }
+  if (!edited()) { download(cap.blob); savedAt = hIndex; return toast('Video saved'); }
   busy = true; pause();
   for (const b of document.querySelectorAll('button')) b.disabled = true;
   toast(`Saving your edit… this takes about ${Math.ceil(keptLength())} seconds. Keep this tab open.`, 600000);
-  try { download(await render()); toast('Video saved'); }
+  try { download(await render()); savedAt = hIndex; toast('Video saved'); }
   catch (e) { console.error(e); toast('Could not save: ' + e.message, 6000); }
   finally {
     busy = false;
@@ -292,6 +300,13 @@ $('#cropReset').onclick = () => { cropBox = { x: 0, y: 0, w: v.videoWidth, h: v.
 $('#cropCancel').onclick = () => setCropMode(false);
 $('#save').onclick = save;
 $('#orig').onclick = () => { download(cap.blob); toast('Original saved'); };
+$('#trash').onclick = async () => {
+  if (!confirm('Delete this recording? It will be removed from CleanCapture. Files you already saved are not affected.')) return;
+  await deleteCapture(cap.id); savedAt = hIndex;
+  toast('Recording deleted'); setTimeout(() => window.close(), 600);
+};
+// Ask before leaving with edits that haven't been saved.
+addEventListener('beforeunload', e => { if (cap && edited() && hIndex !== savedAt) e.preventDefault(); });
 v.addEventListener('click', () => (playing ? pause() : play()));
 v.addEventListener('timeupdate', () => { if (!playing) tick(); });
 addEventListener('resize', showCrop);
@@ -304,6 +319,8 @@ addEventListener('keydown', e => {
   else if (k === ' ' && tag !== 'BUTTON' && !e.target.closest?.('.seg')) { e.preventDefault(); playing ? pause() : play(); }
   else if (k === 'arrowleft' || k === 'arrowright') { e.preventDefault(); seek(v.currentTime + (k === 'arrowleft' ? -1 : 1) * (e.shiftKey ? 5 : 1)); }
   else if (k === 's') split();
+  else if (e.key === '[') trimTo('start');
+  else if (e.key === ']') trimTo('end');
   else if (k === 'delete' || k === 'backspace') { e.preventDefault(); del(); }
   else if (k === 'escape' && cropBox) setCropMode(false);
   else if (k === 'enter' && cropBox && tag !== 'BUTTON') applyCrop();
@@ -325,7 +342,7 @@ async function load() {
   }
   $('#mute').hidden = !cap.hasAudio;
   st = { segs: [[0, D]], crop: null, muted: false };
-  commit();
+  commit(); savedAt = hIndex;
   v.addEventListener('loadeddata', showCrop, { once: true });
   thumbs().catch(() => {});
 }

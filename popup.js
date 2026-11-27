@@ -32,6 +32,12 @@ for (const b of document.querySelectorAll('button[data-open]')) b.addEventListen
   chrome.tabs.create({ url: chrome.runtime.getURL(b.dataset.open) });
   window.close();
 });
+// While a recording is running, say so and offer Stop (instead of an error after picking an option).
+chrome.runtime.sendMessage({ t: 'recStatus' }).then(r => {
+  if (!r?.recording) return;
+  $('#recnow').hidden = false;
+  $('#recstop').addEventListener('click', () => { chrome.runtime.sendMessage({ t: 'recStopNow' }); window.close(); });
+}).catch(() => {});
 $('#clear').addEventListener('click', async () => {
   await clearCaptures();
   $('#cleared').textContent = 'Cleared.';

@@ -54,16 +54,17 @@ export function ffCommand(t, msg = {}) {
   if (t === 'pause' && !R.paused) { R.paused = true; R.rec.pause(); R.activeMs = elapsed(); R.resumedAt = 0; }
   else if (t === 'resume' && R.paused) { R.paused = false; R.rec.resume(); R.resumedAt = performance.now(); }
   else if (t === 'region' && msg.rect) R.region = msg.rect;
+  else if (t === 'discard' && R.running) { R.discard = true; R.running = false; R.rec.stop(); }
   else if (t === 'stop' && R.running) { R.running = false; R.activeMs = elapsed(); R.resumedAt = 0; R.rec.stop(); }
 }
 
 async function finish() {
   const me = R; R = null;
   let blob = new Blob(me.chunks, { type: 'video/webm' }), id = null;
-  if (blob.size) {
+  if (blob.size && !me.discard) {
     blob = await addWebmDuration(blob, me.activeMs).catch(() => blob);
     id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     await putCapture({ id, type: 'video', created: Date.now(), title: me.tab.title || 'Recording', blob, duration: me.activeMs / 1000, hasAudio: false });
   }
-  me.onSaved({ id, tabId: me.tab.id });
+  me.onSaved({ id, tabId: me.tab.id, discarded: !!me.discard });
 }

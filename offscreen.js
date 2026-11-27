@@ -7,7 +7,7 @@ import { addWebmDuration } from './webm.js';
 
 const R = {
   rec: null, stream: null, audioCtx: null, chunks: [], tabId: null, title: '',
-  region: null, vw: 0, vh: 0, W: 0, H: 0, hasAudio: false,
+  region: null, vw: 0, vh: 0, W: 0, H: 0, hasAudio: false, discard: false,
   activeMs: 0, resumedAt: 0, ping: null, stopping: false
 };
 const even = n => Math.max(2, Math.round(n / 2) * 2);
@@ -57,7 +57,7 @@ function cropper(track) {
 
 async function start({ streamId, rect, vw, vh, dpr, tabId, title }) {
   if (R.rec) throw new Error('A recording is already running.');
-  Object.assign(R, { region: rect, vw, vh, tabId, title, chunks: [], activeMs: 0, stopping: false, W: 0, H: 0 });
+  Object.assign(R, { region: rect, vw, vh, tabId, title, chunks: [], activeMs: 0, stopping: false, discard: false, W: 0, H: 0 });
   R.stream = await tabStream(streamId, Math.round(vw * dpr), Math.round(vh * dpr));
   const [video] = R.stream.getVideoTracks(), [audio] = R.stream.getAudioTracks();
   R.hasAudio = !!audio;
@@ -96,12 +96,13 @@ async function finish() {
   let blob = new Blob(R.chunks, { type: 'video/webm' });
   R.chunks = []; R.rec = null; R.stream = null; R.audioCtx = null;
   let id = null;
-  if (blob.size) {
+  const discarded = R.discard;
+  if (blob.size && !discarded) {
     blob = await addWebmDuration(blob, R.activeMs).catch(() => blob);
     id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     await putCapture({ id, type: 'video', created: Date.now(), title: R.title || 'Recording', blob, duration: R.activeMs / 1000, hasAudio: R.hasAudio });
   }
-  chrome.runtime.sendMessage({ t: 'recSaved', id, tabId: R.tabId });
+  chrome.runtime.sendMessage({ t: 'recSaved', id, tabId: R.tabId, discarded });
 }
 
 chrome.runtime.onMessage.addListener((msg, _s, respond) => {
@@ -114,5 +115,6 @@ chrome.runtime.onMessage.addListener((msg, _s, respond) => {
   else if (msg.t === 'resume') resume();
   else if (msg.t === 'region') { R.region = msg.rect; if (msg.vw) R.vw = msg.vw; }
   else if (msg.t === 'stop') stop();
+  else if (msg.t === 'discard') { R.discard = true; stop(); }   // stop without keeping anything
   else if (msg.t === 'status') respond({ recording: !!R.rec, tabId: R.tabId });
 });

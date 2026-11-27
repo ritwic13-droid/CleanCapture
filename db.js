@@ -35,3 +35,8 @@ export async function clearCaptures() {
   await tx(db, 'readwrite', s => s.clear());
   db.close();
 }
+export async function deleteCapture(id) {
+  const db = await open();
+  await tx(db, 'readwrite', s => s.delete(id));
+  db.close();
+}

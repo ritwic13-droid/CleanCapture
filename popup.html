@@ -3,6 +3,10 @@
 <body>
   <header><img src="icons/32.png" alt="" width="20" height="20"><h1>CleanCapture</h1></header>
   <main>
+    <div id="recnow" role="status" hidden>
+      <span class="live" aria-hidden="true"></span><span><b>Recording in progress</b><br>Use the panel on the page, or stop here.</span>
+      <button id="recstop" type="button">Stop recording</button>
+    </div>
     <div class="seg" role="radiogroup" aria-label="What to make">
       <label><input type="radio" name="kind" value="shot" checked><span>Screenshot</span></label>
       <label><input type="radio" name="kind" value="rec"><span>Record video</span></label>

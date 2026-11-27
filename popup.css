@@ -31,3 +31,12 @@ footer p { margin:0 0 4px; }
 .seg input:focus-visible + span { outline:2px solid var(--acc); outline-offset:2px; }
 [hidden] { display:none !important; }
 .note { color:var(--mut); font-size:12px; margin:4px 0 0; }
+/* Recording-in-progress banner */
+#recnow { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:12px; border:1px solid var(--rec); border-radius:8px; font-size:12px; }
+#recnow b { font-size:13px; }
+#recnow .live { flex:none; width:10px; height:10px; border-radius:50%; background:var(--rec); animation:blink 1.2s infinite; }
+#recnow > span:nth-child(2) { flex:1; }
+main #recnow button { display:inline-block; width:auto; min-height:0; margin:0; flex:none; background:#b91c1c; color:#fff; border:0; border-radius:6px; padding:8px 10px; font:600 12px system-ui,sans-serif; cursor:pointer; }
+main #recnow button:hover { background:#991b1b; }
+@keyframes blink { 50% { opacity:.25; } }
+@media (prefers-reduced-motion: reduce) { #recnow .live { animation:none; } }

@@ -146,7 +146,7 @@ async function start(mode, tab, purpose = 'shot') {
       const bmp = await createImageBitmap(blob);
       return finish(tab, [{ blob, vw: bmp.width, sx: 0, sy: 0, sw: bmp.width, sh: bmp.height, dx: 0, dy: 0 }], bmp.width, bmp.height);
     }
-    throw new Error('This page cannot be captured (browser pages and the Web Store block extensions). Try "Visible area".');
+    throw new Error('This page cannot be captured (browser pages and the Web Store block extensions). Try "This tab".');
   }
   if (mode === 'area') return void await send(tab.id, { t: 'pickArea', purpose });
   if (mode === 'element') return void await send(tab.id, { t: 'pickElement', purpose });
@@ -172,6 +172,15 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   if (msg.target === 'offscreen' && !chrome.offscreen) { ffCommand(msg.t, msg); return; }   // Firefox: recorder lives here
   if (msg.t === 'recSaved') { recSaved(msg); return; }
   if (msg.t === 'recPing') return;
+  if (msg.t === 'recStatus') {                         // also true if the background restarted mid-recording
+    const offscreenUp = chrome.runtime.getContexts ? chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] }).then(c => c.length > 0).catch(() => false) : Promise.resolve(false);
+    offscreenUp.then(up => respond({ recording: recTabId != null || ffRecording() || up }));
+    return true;
+  }
+  if (msg.t === 'recStopNow') {
+    if (FIREFOX) ffCommand('stop'); else chrome.runtime.sendMessage({ target: 'offscreen', t: 'stop' }).catch(() => {});
+    return;
+  }
   if (msg.t === 'picked' && sender.tab) {
     const run = msg.mode === 'area' ? runArea(sender.tab, msg.rect) : runElement(sender.tab);
     run.catch(e => fail(sender.tab, e));
@@ -181,7 +190,7 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
 // The finished recording is stored; close the overlay and open the video editor next to the page.
 function recSaved(msg) {
   recTabId = null; badge(msg.tabId, '');
-  if (msg.tabId != null) send(msg.tabId, { t: 'recEnd' }).catch(() => {});
+  if (msg.tabId != null) send(msg.tabId, { t: 'recEnd', discarded: !!msg.discarded }).catch(() => {});
   chrome.offscreen?.closeDocument().catch(() => {});
   if (msg.id) chrome.tabs.get(msg.tabId).catch(() => null).then(tab => chrome.tabs.create({
     url: chrome.runtime.getURL('video.html?id=' + msg.id), ...(tab ? { index: tab.index + 1, windowId: tab.windowId } : {})

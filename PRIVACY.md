@@ -14,4 +14,5 @@ CleanCapture does not collect, transmit, sell or share any data.
   folder or clear it. Recordings are never uploaded.
 - Recording an element or area records only the tab you started it on, only while the red frame is showing (`tabCapture` in Chrome).
 - The microphone is used only if you tick "Include microphone" on the recorder page.
-- Remove stored screenshots any time with "Clear saved captures" in the popup, or by uninstalling the extension.
+- Remove stored captures any time with "Clear saved captures" in the popup, "Delete recording" in the video editor,
+  or by uninstalling the extension. "Discard" during a recording throws it away without storing it.

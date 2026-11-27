@@ -65,34 +65,70 @@
     return h;
   }
 
+  // High-contrast crosshair: white outline around a dark core with a red centre, readable on any page.
+  const CROSS = 'url("data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><g fill="none" stroke-linecap="square">' +
+    '<path d="M16 2v10M16 20v10M2 16h10M20 16h10" stroke="#fff" stroke-width="5"/>' +
+    '<path d="M16 2v10M16 20v10M2 16h10M20 16h10" stroke="#111827" stroke-width="2"/></g>' +
+    '<circle cx="16" cy="16" r="2.5" fill="#ef4444" stroke="#fff" stroke-width="1.5"/></svg>') + '") 16 16, crosshair';
+
   function pickArea(purpose = 'shot') {
     const ov = document.createElement('div');
-    ov.style.cssText = `all:initial;position:fixed;inset:0;z-index:${Z};cursor:crosshair;background:rgba(0,0,0,.25)`;
+    ov.style.cssText = `all:initial;position:fixed;inset:0;z-index:${Z};background:rgba(0,0,0,.25)`;
+    ov.style.cursor = CROSS;
     const box = document.createElement('div');
     box.style.cssText = 'all:initial;position:fixed;display:none;border:1px solid #fff;outline:1px dashed #2563eb;box-shadow:0 0 0 99999px rgba(0,0,0,.45);pointer-events:none';
-    ov.appendChild(box);
-    const tip = hint(purpose === 'record' ? 'Drag to select the area to record · Esc to cancel' : 'Drag to select an area · Esc to cancel');
+    // Guide lines across the whole window: visible even where a site blocks custom cursors.
+    const line = 'all:initial;position:fixed;display:none;pointer-events:none;background:#111827;box-shadow:0 0 0 1px rgba(255,255,255,.9)';
+    const gx = document.createElement('div'), gy = document.createElement('div');
+    gx.style.cssText = line + ';left:0;right:0;height:1px'; gy.style.cssText = line + ';top:0;bottom:0;width:1px';
+    const size = document.createElement('div');
+    size.style.cssText = 'all:initial;position:fixed;display:none;pointer-events:none;background:#111827;color:#fff;font:600 12px/1 system-ui,sans-serif;padding:5px 8px;border-radius:999px;box-shadow:0 0 0 1px rgba(255,255,255,.8);font-variant-numeric:tabular-nums';
+    ov.append(box, gx, gy, size);
+    const TIP = (purpose === 'record' ? 'Drag to select the area to record' : 'Drag to select an area') + ' · Enter for the whole visible page · Esc to cancel';
+    const tip = hint(TIP);
     document.documentElement.appendChild(ov);
-    let x0, y0, rect = null;
+    let x0 = null, y0 = null, rect = null;
     const done = () => { ov.remove(); tip.remove(); removeEventListener('keydown', key, true); };
-    const key = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(); } };
+    const finish = async r => {
+      done();
+      await settle(60);
+      if (purpose === 'record') { REC.el = null; recPrepare(r); }
+      chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, dpr: devicePixelRatio, rect: { ...r, vw: innerWidth, vh: innerHeight } });
+    };
+    const key = e => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish({ x: 0, y: 0, w: innerWidth, h: innerHeight }); }
+    };
     addEventListener('keydown', key, true);
+    const guides = (x, y) => {
+      gx.style.display = gy.style.display = 'block';
+      gx.style.top = y + 'px'; gy.style.left = x + 'px';
+    };
     ov.addEventListener('pointerdown', e => {
       e.preventDefault(); ov.setPointerCapture(e.pointerId);
-      x0 = e.clientX; y0 = e.clientY; ov.style.background = 'transparent'; box.style.display = 'block';
+      x0 = e.clientX; y0 = e.clientY; rect = null; ov.style.background = 'transparent'; box.style.display = 'block';
+      Object.assign(box.style, { left: x0 + 'px', top: y0 + 'px', width: '0px', height: '0px' });
     });
     ov.addEventListener('pointermove', e => {
-      if (x0 == null) return;
       const cx = Math.min(Math.max(e.clientX, 0), innerWidth), cy = Math.min(Math.max(e.clientY, 0), innerHeight);
+      guides(cx, cy);
+      if (x0 == null) return;
       rect = { x: Math.min(x0, cx), y: Math.min(y0, cy), w: Math.abs(cx - x0), h: Math.abs(cy - y0) };
       Object.assign(box.style, { left: rect.x + 'px', top: rect.y + 'px', width: rect.w + 'px', height: rect.h + 'px' });
+      size.textContent = `${Math.round(rect.w)} × ${Math.round(rect.h)}`;
+      size.style.display = 'block';
+      const sw = size.offsetWidth, sh = size.offsetHeight;
+      Object.assign(size.style, { left: Math.min(innerWidth - sw - 4, cx + 14) + 'px', top: Math.min(innerHeight - sh - 4, cy + 14) + 'px' });
     });
-    ov.addEventListener('pointerup', async () => {
-      done();
-      if (!rect || rect.w < 5 || rect.h < 5) return;
-      await settle(60);
-      if (purpose === 'record') { REC.el = null; recPrepare(rect); }
-      chrome.runtime.sendMessage({ t: 'picked', mode: 'area', purpose, dpr: devicePixelRatio, rect: { ...rect, vw: innerWidth, vh: innerHeight } });
+    ov.addEventListener('pointerup', () => {
+      const min = purpose === 'record' ? 40 : 5;
+      if (!rect || rect.w < min || rect.h < min) {        // a click or a tiny drag: stay open and say why
+        x0 = y0 = null; rect = null; box.style.display = size.style.display = 'none'; ov.style.background = 'rgba(0,0,0,.25)';
+        tip.textContent = `Drag a bigger area (at least ${min} × ${min}) · Enter for the whole visible page · Esc to cancel`;
+        return;
+      }
+      finish(rect);
     });
   }
 
@@ -207,7 +243,7 @@
       .count b{display:block;width:104px;height:104px;border-radius:50%;background:rgba(17,24,39,.88);color:#fff;font:700 52px/104px system-ui,sans-serif;text-align:center}
       .count span{color:#fff;background:rgba(17,24,39,.88);font:500 13px/1 system-ui,sans-serif;padding:7px 12px;border-radius:999px}
       .bar{position:fixed;display:flex;align-items:center;gap:6px;padding:5px 5px 5px 12px;background:#111827;color:#f9fafb;border-radius:999px;font:600 13px/1 system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.3);pointer-events:auto;white-space:nowrap}
-      .bar[hidden],.count[hidden]{display:none}
+      .bar[hidden],.count[hidden],button[hidden]{display:none}
       .dot{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:blink 1.2s infinite}
       .dot.paused{animation:none;background:#9ca3af;border-radius:2px}
       @keyframes blink{50%{opacity:.2}}
@@ -223,19 +259,28 @@
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
     const frame = el('div', 'frame');
     for (const h of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) { const i = el('i'); i.dataset.h = h; frame.appendChild(i); }
-    const count = el('div', 'count'); const num = el('b', '', '3'); count.append(num, el('span', '', 'Recording starts… Esc to go back'));
+    const count = el('div', 'count'); const num = el('b', '', '3'); count.append(num, el('span', '', 'Recording starts… Back or Esc to wait'));
     const bar = el('div', 'bar'); bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Recording controls'); bar.hidden = true;
     const dot = el('span', 'dot'); dot.setAttribute('aria-hidden', 'true');
     const time = el('span', 'time', '00:00'); time.setAttribute('aria-label', 'Recorded time');
     const pause = el('button', '', 'Pause'), edit = el('button', '', 'Edit frame'), stop = el('button', 'stop', 'Stop');
-    bar.append(dot, time, pause, edit, stop);
+    const back = el('button', '', 'Back'), discard = el('button', '', 'Discard');
+    const yes = el('button', 'stop', 'Discard'), no = el('button', '', 'Keep recording');
+    bar.append(dot, time, back, pause, edit, discard, stop, no, yes);
     const sr = el('div', 'sr'); sr.setAttribute('role', 'status');
     root.append(style, frame, count, bar, sr);
     document.documentElement.appendChild(host);
     REC.host = host;
-    REC.ui = { frame, count, num, bar, dot, time, pause, edit, stop, sr };
+    REC.ui = { frame, count, num, bar, dot, time, pause, edit, stop, back, discard, yes, no, sr };
     pause.addEventListener('click', () => (REC.phase === 'ready' ? startCountdown() : togglePause()));
     edit.addEventListener('click', toggleEdit);
+    back.addEventListener('click', backToReady);
+    discard.addEventListener('click', askDiscard);
+    no.addEventListener('click', keepRecording);
+    yes.addEventListener('click', () => {
+      for (const b of [yes, no]) b.disabled = true; time.textContent = 'Discarding…';
+      toRecorder('discard');
+    });
     stop.addEventListener('click', () => {
       if (REC.phase === 'ready') { recEnd(); return; }          // Cancel: nothing was recorded
       stop.disabled = pause.disabled = edit.disabled = true; stop.textContent = 'Saving…';
@@ -297,7 +342,7 @@
       REC.wasPaused = REC.paused;
       if (live && !REC.paused) setPaused(true);
       REC.editing = true; frame.classList.add('edit'); edit.textContent = 'Done'; pause.disabled = true;
-      announce((live ? 'Recording paused. ' : '') + 'Drag the frame or its handles, then press Done.');
+      announce((live ? 'Recording paused. ' : '') + 'Drag the frame or its handles, or use the arrow keys to move it and Shift plus arrows to resize it. Press Done or Enter when finished.');
     } else {
       REC.editing = false; frame.classList.remove('edit'); edit.textContent = 'Edit frame'; pause.disabled = false;
       REC.base = { ...REC.rect };
@@ -343,23 +388,64 @@
 
   // Ready: frame and panel are shown, nothing is recorded, and the page works normally
   // (the frame ignores the mouse). Start recording → countdown → recording.
-  function showReady() {
-    const { frame, count, bar, dot, time, pause, edit, stop } = REC.ui;
-    REC.phase = 'ready';
-    frame.classList.add('ready'); count.hidden = true; bar.hidden = false;
-    dot.classList.add('paused'); time.textContent = 'Ready'; time.removeAttribute('aria-label');
-    pause.textContent = 'Start recording'; pause.className = 'stop'; pause.disabled = false;
-    edit.disabled = false; stop.textContent = 'Cancel'; stop.className = ''; stop.disabled = false;
+  // Which controls the panel shows in each phase (see docs/RECORDING_PLAN.md §12–13).
+  const PHASE_BUTTONS = { ready: ['pause', 'edit', 'stop'], countdown: ['back'], live: ['pause', 'edit', 'discard', 'stop'], confirm: ['no', 'yes'] };
+  function setPhase(phase) {
+    const u = REC.ui; REC.phase = phase;
+    for (const k of ['back', 'pause', 'edit', 'discard', 'stop', 'no', 'yes']) { u[k].hidden = !PHASE_BUTTONS[phase].includes(k); u[k].disabled = false; }
+    u.bar.hidden = false;
+    if (phase === 'ready') {
+      u.frame.classList.add('ready'); u.count.hidden = true; u.dot.classList.add('paused');
+      u.time.textContent = 'Ready'; u.time.removeAttribute('aria-label');
+      u.pause.textContent = 'Start recording'; u.pause.className = 'stop'; u.stop.textContent = 'Cancel'; u.stop.className = '';
+    } else if (phase === 'live') {
+      u.frame.classList.remove('ready'); u.dot.classList.toggle('paused', REC.paused);
+      u.time.textContent = fmt(recElapsed()); u.time.setAttribute('aria-label', 'Recorded time');
+      u.pause.textContent = REC.paused ? 'Resume' : 'Pause'; u.pause.className = ''; u.stop.textContent = 'Stop'; u.stop.className = 'stop';
+    } else if (phase === 'confirm') u.time.textContent = 'Discard this recording?';
     place();
+  }
+  function showReady() { setPhase('ready'); }
+  function backToReady() {
+    clearInterval(REC.countIv);
+    showReady(); REC.ui.pause.focus({ preventScroll: true });
+    announce('Countdown stopped. Nothing was recorded.');
+  }
+  function askDiscard() {
+    REC.confirmWasPaused = REC.paused;
+    if (!REC.paused) setPaused(true);
+    setPhase('confirm'); REC.ui.no.focus({ preventScroll: true });
+    announce('Recording paused. Discard this recording? Choose Discard or Keep recording.');
+  }
+  function keepRecording() {
+    setPhase('live');
+    if (!REC.confirmWasPaused) setPaused(false);
+    REC.ui.pause.focus({ preventScroll: true });
+    announce(REC.confirmWasPaused ? 'Kept. Recording is still paused.' : 'Kept. Recording resumed.');
   }
   function recReady() {
     if (!REC.rect) return false;
     if (REC.ui) recEnd();
     recBuild();
     REC.cancel = e => {
-      if (e.key !== 'Escape' || !REC.ui) return;
-      if (REC.phase === 'ready' && !REC.editing) { e.preventDefault(); e.stopPropagation(); recEnd(); }
-      else if (REC.phase === 'countdown') { e.preventDefault(); e.stopPropagation(); clearInterval(REC.countIv); showReady(); announce('Countdown stopped'); }
+      if (!REC.ui) return;
+      const eat = () => { e.preventDefault(); e.stopPropagation(); };
+      if (REC.editing) {                                   // keyboard editing of the frame (WCAG 2.1.1)
+        const step = 10, r = { ...REC.rect }, W = innerWidth, H = innerHeight;
+        const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+        if (k) {
+          eat();
+          if (e.shiftKey) { r.w = Math.min(W - r.x, Math.max(40, r.w + k[0] * step)); r.h = Math.min(H - r.y, Math.max(40, r.h + k[1] * step)); }
+          else { r.x = Math.min(W - r.w, Math.max(0, r.x + k[0] * step)); r.y = Math.min(H - r.h, Math.max(0, r.y + k[1] * step)); }
+          REC.rect = r; place();
+          announce(`Frame ${Math.round(r.w)} by ${Math.round(r.h)}`);
+        } else if (e.key === 'Enter' || e.key === 'Escape') { eat(); toggleEdit(); REC.ui.edit.focus({ preventScroll: true }); }
+        return;
+      }
+      if (e.key !== 'Escape') return;
+      if (REC.phase === 'ready') { eat(); recEnd(); }
+      else if (REC.phase === 'countdown') { eat(); backToReady(); }
+      else if (REC.phase === 'confirm') { eat(); keepRecording(); }
     };
     addEventListener('keydown', REC.cancel, true);
     showReady();
@@ -369,12 +455,13 @@
   }
   function startCountdown() {
     if (REC.editing) toggleEdit();
-    const { count, num, bar } = REC.ui;
-    REC.phase = 'countdown'; bar.hidden = true; count.hidden = false;
-    let n = 3; num.textContent = n; place();
+    const { count, num, time } = REC.ui;
+    setPhase('countdown'); count.hidden = false;
+    let n = 3; num.textContent = n; time.textContent = 'Starting in 3'; place();
+    REC.ui.back.focus({ preventScroll: true });
     announce('Recording starts in 3 seconds');
     REC.countIv = setInterval(async () => {
-      if (--n > 0) { num.textContent = n; return; }
+      if (--n > 0) { num.textContent = n; time.textContent = 'Starting in ' + n; return; }
       clearInterval(REC.countIv);
       count.hidden = true;
       await settle(120);                                  // make sure the number is gone from the screen first
@@ -388,15 +475,11 @@
   }
   function recLive() {
     if (!REC.ui) return;
-    const { frame, dot, time, pause, stop } = REC.ui;
-    REC.live = true; REC.phase = 'live'; REC.resumedAt = performance.now();
-    frame.classList.remove('ready'); dot.classList.remove('paused');
-    time.textContent = '00:00'; time.setAttribute('aria-label', 'Recorded time');
-    pause.textContent = 'Pause'; pause.className = ''; stop.textContent = 'Stop'; stop.className = 'stop';
-    REC.ui.bar.hidden = false; place();
-    REC.ui.stop.focus({ preventScroll: true });
+    REC.live = true; REC.paused = false; REC.resumedAt = performance.now();
+    setPhase('live');
+    REC.ui.pause.focus({ preventScroll: true });           // not Stop: a stray Enter must not end the recording
     announce('Recording started');
-    REC.timer = setInterval(() => { if (REC.ui) REC.ui.time.textContent = fmt(recElapsed()); }, 250);
+    REC.timer = setInterval(() => { if (REC.ui && REC.phase === 'live') REC.ui.time.textContent = fmt(recElapsed()); }, 250);
     REC.ping = setInterval(() => toRecorder('ping'), 10000);   // keeps Firefox's background page awake
   }
 
@@ -460,7 +543,11 @@
     restore() { restore(); return true; },
     recReady() { return recReady(); },
     recLive() { recLive(); return true; },
-    recEnd() { recEnd(); return true; },
+    recEnd({ discarded }) {
+      recEnd();
+      if (discarded) { const h = hint('Recording discarded'); setTimeout(() => h.remove(), 2500); }
+      return true;
+    },
     pickArea({ purpose }) { pickArea(purpose); return true; },
     pickElement({ purpose }) { pickElement(purpose); return true; }
   };

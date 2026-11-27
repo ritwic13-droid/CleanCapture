@@ -14,6 +14,7 @@
   </div>
   <div class="spacer"></div>
   <div class="group" role="group" aria-label="Save">
+    <button id="trash" title="Remove this recording from the extension's storage">Delete recording</button>
     <button id="orig" title="Save the recording exactly as it was recorded">Save original</button>
     <button id="save" class="primary" title="Save with your edits">Save video</button>
   </div>
@@ -44,6 +45,7 @@
       <div id="head" aria-hidden="true"></div>
     </div>
     <p id="info" class="note">Drag the ends of a part to trim it. Split at the playhead, then select a part and delete it to cut it out.</p>
+    <p id="keys" class="note">Keys: Space play/pause · ← → move 1 s (Shift 5 s) · S split · [ ] trim the selected part to the playhead · Delete remove part · Ctrl+Z undo</p>
     <div id="progress" hidden><div></div></div>
   </section>
   <div id="toast" hidden></div>
