@@ -199,6 +199,7 @@
     style.textContent = `
       *{box-sizing:border-box}
       .frame{position:fixed;border:3px solid #ef4444;border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.3);pointer-events:none}
+      .frame.ready{border-style:dashed;border-color:rgba(239,68,68,.8)}
       .frame.edit{pointer-events:auto;cursor:move;border-style:dashed}
       .frame i{display:none;position:absolute;width:14px;height:14px;background:#fff;border:2px solid #ef4444;border-radius:3px;pointer-events:auto}
       .frame.edit i{display:block}
@@ -222,7 +223,7 @@
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
     const frame = el('div', 'frame');
     for (const h of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) { const i = el('i'); i.dataset.h = h; frame.appendChild(i); }
-    const count = el('div', 'count'); const num = el('b', '', '3'); count.append(num, el('span', '', 'Recording starts… Esc to cancel'));
+    const count = el('div', 'count'); const num = el('b', '', '3'); count.append(num, el('span', '', 'Recording starts… Esc to go back'));
     const bar = el('div', 'bar'); bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Recording controls'); bar.hidden = true;
     const dot = el('span', 'dot'); dot.setAttribute('aria-hidden', 'true');
     const time = el('span', 'time', '00:00'); time.setAttribute('aria-label', 'Recorded time');
@@ -233,9 +234,10 @@
     document.documentElement.appendChild(host);
     REC.host = host;
     REC.ui = { frame, count, num, bar, dot, time, pause, edit, stop, sr };
-    pause.addEventListener('click', togglePause);
+    pause.addEventListener('click', () => (REC.phase === 'ready' ? startCountdown() : togglePause()));
     edit.addEventListener('click', toggleEdit);
     stop.addEventListener('click', () => {
+      if (REC.phase === 'ready') { recEnd(); return; }          // Cancel: nothing was recorded
       stop.disabled = pause.disabled = edit.disabled = true; stop.textContent = 'Saving…';
       if (REC.editing) toggleEdit();
       REC.activeMs = recElapsed(); REC.resumedAt = 0;
@@ -290,18 +292,21 @@
   }
   function toggleEdit() {
     const { frame, edit, pause } = REC.ui;
+    const live = REC.phase === 'live';
     if (!REC.editing) {
       REC.wasPaused = REC.paused;
-      if (!REC.paused) setPaused(true);
+      if (live && !REC.paused) setPaused(true);
       REC.editing = true; frame.classList.add('edit'); edit.textContent = 'Done'; pause.disabled = true;
-      announce('Recording paused. Drag the frame or its handles, then press Done.');
+      announce((live ? 'Recording paused. ' : '') + 'Drag the frame or its handles, then press Done.');
     } else {
       REC.editing = false; frame.classList.remove('edit'); edit.textContent = 'Edit frame'; pause.disabled = false;
       REC.base = { ...REC.rect };
       if (REC.el) REC.elBase = REC.el.getBoundingClientRect();
-      sendRegion();
-      if (!REC.wasPaused) setPaused(false);
-      announce(REC.wasPaused ? 'Frame updated' : 'Frame updated, recording resumed');
+      if (live) {
+        sendRegion();
+        if (!REC.wasPaused) setPaused(false);
+        announce(REC.wasPaused ? 'Frame updated' : 'Frame updated, recording resumed');
+      } else announce('Frame updated');
     }
     place();
   }
@@ -333,31 +338,61 @@
     removeEventListener('scroll', follow, true); removeEventListener('resize', follow);
     removeEventListener('keydown', REC.cancel, true);
     REC.host?.remove();
-    Object.assign(REC, { host: null, ui: null, live: false, editing: false, paused: false, el: null, activeMs: 0, resumedAt: 0 });
+    Object.assign(REC, { host: null, ui: null, live: false, phase: null, editing: false, paused: false, el: null, activeMs: 0, resumedAt: 0 });
   }
 
-  // 3-2-1 over the region. Resolves with the current region, or null if cancelled (Esc).
-  function recCountdown() {
-    if (!REC.rect) return Promise.resolve(null);
-    recBuild(); place();
-    const { count, num } = REC.ui;
-    return new Promise(res => {
-      let n = 3, iv = 0;
-      REC.cancel = e => { if (e.key !== 'Escape') return; e.preventDefault(); e.stopPropagation(); clearInterval(iv); recEnd(); res(null); };
-      addEventListener('keydown', REC.cancel, true);
-      iv = setInterval(async () => {
-        if (--n > 0) { num.textContent = n; return; }
-        clearInterval(iv);
-        removeEventListener('keydown', REC.cancel, true);
-        count.hidden = true;
-        await settle(120);                                  // make sure the number is gone from the screen first
-        res({ ...REC.rect, vw: innerWidth, vh: innerHeight, sx: scrollX, sy: scrollY });
-      }, 1000);
-    });
+  // Ready: frame and panel are shown, nothing is recorded, and the page works normally
+  // (the frame ignores the mouse). Start recording → countdown → recording.
+  function showReady() {
+    const { frame, count, bar, dot, time, pause, edit, stop } = REC.ui;
+    REC.phase = 'ready';
+    frame.classList.add('ready'); count.hidden = true; bar.hidden = false;
+    dot.classList.add('paused'); time.textContent = 'Ready'; time.removeAttribute('aria-label');
+    pause.textContent = 'Start recording'; pause.className = 'stop'; pause.disabled = false;
+    edit.disabled = false; stop.textContent = 'Cancel'; stop.className = ''; stop.disabled = false;
+    place();
+  }
+  function recReady() {
+    if (!REC.rect) return false;
+    if (REC.ui) recEnd();
+    recBuild();
+    REC.cancel = e => {
+      if (e.key !== 'Escape' || !REC.ui) return;
+      if (REC.phase === 'ready' && !REC.editing) { e.preventDefault(); e.stopPropagation(); recEnd(); }
+      else if (REC.phase === 'countdown') { e.preventDefault(); e.stopPropagation(); clearInterval(REC.countIv); showReady(); announce('Countdown stopped'); }
+    };
+    addEventListener('keydown', REC.cancel, true);
+    showReady();
+    REC.ui.pause.focus({ preventScroll: true });
+    announce('Ready to record. Adjust the page or the frame, then press Start recording.');
+    return true;
+  }
+  function startCountdown() {
+    if (REC.editing) toggleEdit();
+    const { count, num, bar } = REC.ui;
+    REC.phase = 'countdown'; bar.hidden = true; count.hidden = false;
+    let n = 3; num.textContent = n; place();
+    announce('Recording starts in 3 seconds');
+    REC.countIv = setInterval(async () => {
+      if (--n > 0) { num.textContent = n; return; }
+      clearInterval(REC.countIv);
+      count.hidden = true;
+      await settle(120);                                  // make sure the number is gone from the screen first
+      if (!REC.ui || REC.phase !== 'countdown') return;
+      const r = await chrome.runtime.sendMessage({ t: 'recGo', dpr: devicePixelRatio,
+        rect: { ...REC.rect, vw: innerWidth, vh: innerHeight, sx: scrollX, sy: scrollY } }).catch(e => ({ ok: false, error: e.message }));
+      if (!REC.ui) return;
+      if (r?.ok) recLive();
+      else { recEnd(); const h = hint('Could not start recording: ' + (r?.error || 'unknown error')); setTimeout(() => h.remove(), 5000); }
+    }, 1000);
   }
   function recLive() {
     if (!REC.ui) return;
-    REC.live = true; REC.resumedAt = performance.now();
+    const { frame, dot, time, pause, stop } = REC.ui;
+    REC.live = true; REC.phase = 'live'; REC.resumedAt = performance.now();
+    frame.classList.remove('ready'); dot.classList.remove('paused');
+    time.textContent = '00:00'; time.setAttribute('aria-label', 'Recorded time');
+    pause.textContent = 'Pause'; pause.className = ''; stop.textContent = 'Stop'; stop.className = 'stop';
     REC.ui.bar.hidden = false; place();
     REC.ui.stop.focus({ preventScroll: true });
     announce('Recording started');
@@ -423,7 +458,7 @@
     async elScroll({ y }) { S.el.scrollTop = y; await settle(); return elInfo(); },
     async elTail() { S.el.scrollIntoView({ block: 'end' }); await settle(); return elInfo(); },
     restore() { restore(); return true; },
-    async recCountdown() { return recCountdown(); },
+    recReady() { return recReady(); },
     recLive() { recLive(); return true; },
     recEnd() { recEnd(); return true; },
     pickArea({ purpose }) { pickArea(purpose); return true; },

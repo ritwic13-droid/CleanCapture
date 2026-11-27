@@ -1,6 +1,6 @@
 # In-page recording: plan and reference
 
-Status: **shipped in 1.5.0** (Chrome tested; Firefox needs a manual check) · Version: **1.5.0** · This document is the source of truth for the change. It is updated as the work lands (see "Progress").
+Status: **1.6.0 done** (Chrome tested; Firefox needs a manual check) · Version: **1.6.0** · This document is the source of truth for the change. It is updated as the work lands (see "Progress").
 
 ## 1. Problem
 
@@ -17,6 +17,7 @@ That is three unnecessary steps and a context switch for something the user alre
 
 1. Popup → **Record video** → **Pick element** or **Selected area**.
 2. The user picks the element or drags the area **on the page they are on**.
+2a. *(Added in 1.6.0, §12)* A **ready** step: frame and panel appear, the page stays usable, and the user chooses **Start recording**, **Edit frame** or **Cancel**.
 3. **No share dialog, no new tab.** The extension records the tab the user is on.
 4. A **3-second countdown** appears over the chosen region.
 5. Recording starts. The region gets a **red outline**. At its **top-right corner** a control bar shows:
@@ -169,3 +170,52 @@ Chrome only lets an extension capture a tab after the user clicks its toolbar bu
 - **Microphone** is not available in in-page recording; use **Browser tab** or **Window or screen** for narration.
 - If the region fills the whole window, the control bar has to sit inside it and will appear in the video.
 - Saving an edited video takes about as long as the edited video plays.
+
+## 12. Change for 1.6.0: a "ready" step before the countdown
+
+**Request:** after picking the element or area, the user should be able to adjust things before recording starts: move the frame, scroll the page, and use the page normally (for example play, pause or scrub a video), then choose to start, edit the frame, or cancel, from the same panel at the frame's top-right.
+
+**New flow**
+
+1. Pick an element or drag an area (unchanged).
+2. **Ready:** the red frame and the panel appear at once. Nothing is being recorded yet.
+   - Panel: grey dot, "Ready", **Start recording** (red), **Edit frame**, **Cancel**.
+   - The page works normally: scroll, click, type, play or scrub videos. The frame ignores the mouse, so clicks go to the page underneath.
+   - **Edit frame** gives the frame its handles; **Done** returns to ready. A picked element is still followed when the page scrolls.
+   - **Cancel** or Esc removes everything.
+3. **Start recording** → 3-second countdown → recording, exactly as in 1.5. Esc during the countdown goes back to ready instead of cancelling.
+4. Recording controls and Stop → editor are unchanged.
+
+**Design notes**
+
+- The frame is dashed and dimmer while ready, and solid red once recording, so it's clear when recording is actually happening.
+- The background no longer waits for the countdown. The page tells it when to start (`recGo`), so a long ready step can't time out the background service worker.
+- Tab capture is still allowed after a long ready step: Chrome keeps the toolbar-click permission until the page navigates or closes.
+
+**Tests**
+
+| # | Test |
+|---|---|
+| T13 | Ready panel appears after picking, with Start recording / Edit frame / Cancel, and nothing is recorded yet |
+| T14 | While ready: clicking, typing and scrubbing a slider on the page work; scrolling moves the frame with a picked element |
+| T15 | Edit frame while ready changes the region; the recording uses the new region |
+| T16 | Cancel and Esc while ready remove the overlay; Esc during the countdown returns to ready |
+| T17 | Start → countdown → recording → Stop → editor still works (T1–T8 re-run) |
+
+**Progress**
+
+- [x] Plan updated
+- [x] Ready step in the overlay (`content.js`) and `recGo` start in the background (`background.js`)
+- [x] Tests T13–T17
+- [x] Version 1.6.0, packages, docs, GitHub push
+- [ ] Manual check in Firefox (still open from T12)
+
+**Results (Chromium, automated, same testing switch as §10)**
+
+| # | Result |
+|---|---|
+| T13 | ✅ After picking: dashed frame, panel shows "Ready", Start recording / Edit frame / Cancel. No recorder page running. |
+| T14 | ✅ While ready: clicked the page's video to play it, clicked a button twice, typed text, moved a slider, scrubbed the video; all worked. Scrolling moved the frame 60px with the element. Still nothing recorded. |
+| T15 | ✅ Edit frame while ready: width 412 → 312; the recording came out 300 × 240 to match. |
+| T16 | ✅ Esc and Cancel while ready remove the overlay. Esc during the countdown returns to ready, and the recorder never started. |
+| T17 | ✅ Start → countdown → solid frame, Pause / Edit frame / Stop → Stop → editor. T1–T8, screenshot tests, accessibility scans (0 violations) and the Firefox linter (0 errors) re-run and passing. |

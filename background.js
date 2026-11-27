@@ -162,8 +162,12 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
     return true;
   }
   if (msg.t === 'picked' && msg.purpose === 'record' && sender.tab) {
-    recordInPage(sender.tab, msg).catch(e => { fail(sender.tab, e); send(sender.tab.id, { t: 'recEnd', error: e.message }).catch(() => {}); });
+    recordInPage(sender.tab).catch(e => { fail(sender.tab, e); send(sender.tab.id, { t: 'recEnd', error: e.message }).catch(() => {}); });
     return;
+  }
+  if (msg.t === 'recGo' && sender.tab) {
+    recGo(sender.tab, msg).then(() => respond({ ok: true }), e => { fail(sender.tab, e); respond({ ok: false, error: e.message }); });
+    return true;
   }
   if (msg.target === 'offscreen' && !chrome.offscreen) { ffCommand(msg.t, msg); return; }   // Firefox: recorder lives here
   if (msg.t === 'recSaved') { recSaved(msg); return; }
@@ -195,25 +199,26 @@ async function ensureOffscreen() {
   await chrome.offscreen.createDocument({ url: 'offscreen.html', reasons: ['USER_MEDIA'], justification: 'Record the current tab after the user picks an area or element to record.' });
 }
 const FIREFOX = !chrome.offscreen && !!chrome.tabs.captureTab;
-async function recordInPage(tab, msg) {
+// Picked: show the ready frame and panel in the page. Nothing is recorded until the user
+// presses Start recording there; the page then sends recGo (after its countdown).
+async function recordInPage(tab) {
   if (!FIREFOX && (!chrome.tabCapture || !chrome.offscreen)) throw new Error('This browser cannot record part of a page.');
   if (recTabId != null || ffRecording()) throw new Error('A recording is already running.');
+  await send(tab.id, { t: 'recReady' });
+}
+async function recGo(tab, msg) {
+  if (recTabId != null || ffRecording()) throw new Error('A recording is already running.');
+  const rect = msg.rect;
   recTabId = tab.id;
   try {
-    const rect = await send(tab.id, { t: 'recCountdown' });        // overlay + 3-2-1; null if cancelled
-    if (!rect) { recTabId = null; return; }
-    if (FIREFOX) {
-      await ffStart({ tab, rect, dpr: msg.dpr, onSaved: recSaved });
-      badge(tab.id, 'REC', '#dc2626');
-      await send(tab.id, { t: 'recLive' });
-      return;
+    if (FIREFOX) await ffStart({ tab, rect, dpr: msg.dpr, onSaved: recSaved });
+    else {
+      await ensureOffscreen();
+      const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
+      const r = await chrome.runtime.sendMessage({ target: 'offscreen', t: 'start', streamId, rect, vw: rect.vw, vh: rect.vh, dpr: msg.dpr || 1, tabId: tab.id, title: tab.title });
+      if (!r?.ok) throw new Error(r?.error || 'Could not start recording.');
     }
-    await ensureOffscreen();
-    const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
-    const r = await chrome.runtime.sendMessage({ target: 'offscreen', t: 'start', streamId, rect, vw: rect.vw, vh: rect.vh, dpr: msg.dpr || 1, tabId: tab.id, title: tab.title });
-    if (!r?.ok) throw new Error(r?.error || 'Could not start recording.');
     badge(tab.id, 'REC', '#dc2626');
-    await send(tab.id, { t: 'recLive' });
   } catch (e) {
     recTabId = null;
     chrome.offscreen?.closeDocument().catch(() => {});

@@ -20,7 +20,7 @@ New screenshots are copied to the clipboard automatically.
 Export: PNG, JPEG, PDF (A4 pages or one long page), copy to clipboard, print.
 Shortcuts: Alt+Shift+F / E / A / V.
 
-Screen recording: switch the popup to "Record video". Pick an element or drag an area and it records right there on the page — no share dialog — with a 3-second countdown, a red frame, a timer and pause / edit frame / stop controls. Or record a browser tab, a window or the whole screen. When you stop, a video editor opens: trim, cut out parts, crop, mute, then save.
+Screen recording: switch the popup to "Record video". Pick an element or drag an area right there on the page — no share dialog. Adjust the frame or use the page (scroll, play a video) until you're ready, then press Start recording for a 3-second countdown, a red frame, a timer and pause / edit frame / stop controls. Or record a browser tab, a window or the whole screen. When you stop, a video editor opens: trim, cut out parts, crop, mute, then save.
 
 Privacy: no ads, no analytics, no accounts, no network access at all. Screenshots never leave your device.
 
