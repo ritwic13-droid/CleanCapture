@@ -9,10 +9,10 @@ Upload `dist/clean-capture-firefox.zip` (built by `./build.sh`).
 **Name:** CleanCapture – Full Page Screenshot
 **Add-on URL slug:** clean-capture
 **Summary (250 chars max):**
-Full-page, scrollable-area and region screenshots with a built-in annotation editor. Export PNG, JPEG or PDF. No ads, no tracking, no network access.
+Screenshots and screen recording with built-in editors. Capture a full page, any element, an area, a tab or your screen. Export PNG, JPEG, PDF or video. No ads, no tracking, nothing leaves your device.
 
 **Description:**
-CleanCapture takes screenshots and nothing else.
+CleanCapture takes screenshots and screen recordings, and nothing else.
 
 <b>Five ways to take a screenshot</b>
 <ul>
@@ -36,7 +36,7 @@ Alt+Shift+F (full page), E (pick element), A (selected area), V (this tab).
 Switch the popup to "Record video". Pick an element or drag an area right there on the page, adjust the frame or use the page until you're ready, then press Start recording for a countdown, a red frame, a timer and pause / edit frame / stop controls (no sound for element and area recordings in Firefox). Or record a browser tab, a window or the whole screen. When you stop, a video editor opens: trim, cut out parts, crop, mute, then save.
 
 <b>Private by design</b>
-No ads, no analytics, no accounts and no network access at all. Screenshots never leave your device. The source is open: https://github.com/ritwic13-droid/CleanCapture
+No ads, no analytics, no accounts, and no connections to any server. Screenshots and recordings never leave your device. The source is open: https://github.com/ritwic13-droid/CleanCapture
 
 **Categories:** Photos, Music & Videos (or "Other"); second choice: Web Development
 **Tags:** screenshot, full page, pdf, annotate
@@ -48,5 +48,6 @@ No ads, no analytics, no accounts and no network access at all. Screenshots neve
 
 **Notes to reviewer:**
 No build step and no remote code. Permissions: activeTab, scripting, clipboardWrite; no host permissions.
+In-page recording (Record video → Pick element / Selected area) uses browser.tabs.captureTab on the tab where the user invoked the extension, grabbing only the selected rectangle about 15 times a second and recording it with MediaRecorder in the background page. The UNSUPPORTED_API warnings (offscreen, tabCapture) are Chrome-only code paths that are checked before use and never run in Firefox.
 Third-party code (unmodified, from npm): vendor/tesseract/ contains tesseract.js 7.0.0 and tesseract.js-core 7.0.0 (minified as published) plus English language data, used for offline text recognition. Sources and licences are listed in vendor/tesseract/README.md.
-The extension makes no requests to any server (CSP: connect-src 'self'; 'wasm-unsafe-eval' is needed for the Tesseract WebAssembly module). To test: open any web page, click the toolbar icon and choose "Full page".
+The extension makes no requests to any server (CSP: connect-src 'self'; 'wasm-unsafe-eval' is needed for the Tesseract WebAssembly module). To test: open any web page, click the toolbar icon and choose "Full page". To test recording: toolbar icon → Record video → Selected area → drag a rectangle → Start recording → wait for the countdown → Stop.
